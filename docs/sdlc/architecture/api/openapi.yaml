@@ -2,6 +2,232 @@
 openapi: 3.1.0
 info:
   title: Voting Idea
-  version: architecture-v0
+  version: architecture-v1
   description: Designed API from the approved architecture (not extracted from code).
-paths: {}
+paths:
+  /auth/login:
+    post:
+      summary: Log in with email and password. Returns the same generic 401 for unknown
+        email and wrong password.
+      description: Log in with email and password. Returns the same generic 401 for
+        unknown email and wrong password.
+      operationId: post_auth_login
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ email: string, password: string }'
+      responses:
+        '200':
+          description: '200 { token: string, expires_at: datetime, user: { id, email
+            } } | 401 { detail: ''Invalid email or password'' }'
+  /auth/logout:
+    post:
+      summary: Revoke the current session token on the server immediately.
+      description: Revoke the current session token on the server immediately.
+      operationId: post_auth_logout
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: none
+      responses:
+        '200':
+          description: 204 | 401
+      security:
+      - bearerAuth: []
+  /auth/me:
+    get:
+      summary: Return the current user, used by the SPA to show the logged-in state
+        and to detect an expired session.
+      description: Return the current user, used by the SPA to show the logged-in
+        state and to detect an expired session.
+      operationId: get_auth_me
+      parameters: []
+      responses:
+        '200':
+          description: 200 { id, email } | 401
+      security:
+      - bearerAuth: []
+  /auth/signup:
+    post:
+      summary: Create an account and log in immediately. Rejects invalid email, empty
+        password, and duplicate email ignoring case (409)
+      description: Create an account and log in immediately. Rejects invalid email,
+        empty password, and duplicate email ignoring case (409). Any email domain
+        is accepted.
+      operationId: post_auth_signup
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ email: string, password: string }'
+      responses:
+        '200':
+          description: '201 { token: string, expires_at: datetime, user: { id, email
+            } } | 409 | 422 with per-field messages'
+  /health:
+    get:
+      summary: Liveness and database connectivity check for the hosting platform.
+      description: Liveness and database connectivity check for the hosting platform.
+      operationId: get_health
+      parameters: []
+      responses:
+        '200':
+          description: '200 { status: ''ok'' }'
+  /ideas:
+    get:
+      summary: 'Public board: all ideas ordered by vote count descending, ties newest
+        first. Includes voted=true per idea when a valid t'
+      description: 'Public board: all ideas ordered by vote count descending, ties
+        newest first. Includes voted=true per idea when a valid token is sent. Never
+        includes author emails.'
+      operationId: get_ideas
+      parameters: []
+      responses:
+        '200':
+          description: 200 [ { id, title, description, vote_count, created_at, voted
+            } ]
+      security:
+      - bearerAuth: []
+    post:
+      summary: Post an idea with zero votes. Title is required, max 120 characters.
+        Description is required, max 500 characters.
+      description: Post an idea with zero votes. Title is required, max 120 characters.
+        Description is required, max 500 characters.
+      operationId: post_ideas
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: '{ title: string, description: string }'
+      responses:
+        '200':
+          description: '201 { id, title, description, vote_count: 0, created_at, voted:
+            false } | 401 | 422 with per-field messages'
+      security:
+      - bearerAuth: []
+  /ideas/{idea_id}/vote:
+    post:
+      summary: 'Upvote an idea. Idempotent: a repeat vote by the same user changes
+        nothing. Own ideas may be voted on. No un-vote or dow'
+      description: 'Upvote an idea. Idempotent: a repeat vote by the same user changes
+        nothing. Own ideas may be voted on. No un-vote or downvote endpoint exists.'
+      operationId: post_ideas_idea_id_vote
+      parameters:
+      - name: idea_id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: none
+      responses:
+        '200':
+          description: '200 { idea_id, vote_count, voted: true } | 401 | 404'
+      security:
+      - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    users:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        password_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - email
+      - password_hash
+      - created_at
+    sessions:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        token_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        revoked_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - token_hash
+      - created_at
+      - expires_at
+    ideas:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - title
+      - description
+      - created_at
+    votes:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        idea_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user_id
+      - idea_id
+      - created_at
