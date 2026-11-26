@@ -39,9 +39,6 @@ describe("Board log out", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Log out" })).toBeNull());
     expect(getSessionToken()).toBeNull();
     expect(screen.getByTestId("ideas-board-title")).toBeInTheDocument();
-    expect(screen.getByTestId("log-in-or-sign-up-to-vote-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("log-in-link")).toBeInTheDocument();
-    expect(screen.getByTestId("sign-up-link")).toBeInTheDocument();
     expect(screen.queryByText(/Logged in as/)).toBeNull();
   });
 
@@ -68,13 +65,24 @@ describe("Board log out", () => {
     expect(screen.queryByTestId("ideas-board-title")).toBeNull();
   });
 
-  it("[AC-013] a visitor who tries to vote is sent to log in", async () => {
+  it("[AC-033] a visitor who tries to vote is prompted to log in and can go to the log in screen", async () => {
     mockGet([idea("Dark mode", 3)]);
     renderAt("/board");
 
     fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+    fireEvent.click(await screen.findByTestId("log-in-link"));
 
     expect(await screen.findByTestId("log-in-btn")).toBeInTheDocument();
+  });
+
+  it("[AC-033] a visitor can go to the sign up screen from the prompt", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+    fireEvent.click(await screen.findByTestId("sign-up-link"));
+
+    expect(screen.queryByTestId("ideas-board-title")).toBeNull();
   });
 });
 
@@ -151,15 +159,30 @@ describe("Board upvote", () => {
     expect(screen.queryByTestId("log-in-or-sign-up-to-vote-modal")).toBeNull();
   });
 
-  it("[AC-027] a visitor sees the log in or sign up modal and no vote is sent", async () => {
+  it("[AC-034] a visitor sees vote counts and vote controls before any prompt", async () => {
     mockGet([idea("Alpha", 3)]);
     renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(list).toHaveTextContent("3 votes");
+    expect(screen.getByRole("button", { name: /Vote for Alpha/ })).toBeEnabled();
+    expect(screen.queryByTestId("log-in-or-sign-up-to-vote-modal")).toBeNull();
+  });
+
+  it("[AC-033] a visitor's vote attempt shows the prompt, sends no vote and keeps the count", async () => {
+    mockGet([idea("Alpha", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Alpha/ }));
 
     expect(await screen.findByTestId("log-in-or-sign-up-to-vote-modal")).toHaveTextContent(
       "Log in or sign up to vote",
     );
-    fireEvent.click(screen.getByRole("button", { name: /Vote for Alpha/ }));
+    expect(screen.getByTestId("log-in-link")).toBeInTheDocument();
+    expect(screen.getByTestId("sign-up-link")).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list")).toHaveTextContent("3 votes");
+    expect(screen.queryByText("You have voted")).toBeNull();
   });
 
   it("[AC-028] accepts a vote on an idea I posted myself and counts it", async () => {

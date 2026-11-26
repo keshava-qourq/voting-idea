@@ -33,12 +33,14 @@ export default function Screen() {
   const [voting, setVoting] = React.useState(null);
   const inFlight = React.useRef(new Set());
   const [voteFailed, setVoteFailed] = React.useState(false);
+  const [prompt, setPrompt] = React.useState(false);
 
   // Votes are permanent upvotes: the only action is to add one. The list is re-ranked
   // like the server ranks it: most votes first, ties newest first.
   const upvote = async (idea) => {
     if (!loggedIn) {
-      navigate("log-in");
+      // A visitor's vote is never sent: the log in or sign up prompt opens instead.
+      setPrompt(true);
       return;
     }
     // A repeated click while this idea's vote request is in flight is ignored.
@@ -52,6 +54,7 @@ export default function Screen() {
       });
       if (response && response.status === 401) {
         clearSessionToken();
+        setPrompt(true);
       } else if (data) {
         setIdeas((current) =>
           (current ?? [])
@@ -114,10 +117,11 @@ export default function Screen() {
         {rule}
       </header>
 
-      {loggedIn ? null : (
+      {!loggedIn && prompt ? (
         <section
           data-wf="b-1-0"
           data-testid="log-in-or-sign-up-to-vote-modal"
+          role="dialog"
           aria-labelledby="vote-prompt"
           className="mx-auto max-w-xl p-7 text-center"
           style={frame}
@@ -165,7 +169,7 @@ export default function Screen() {
             </button>
           </div>
         </section>
-      )}
+      ) : null}
 
       <section data-wf="b-2-0" aria-labelledby="ranked-heading" className="space-y-4">
         <h2 id="ranked-heading" className="text-center text-sm" style={caps}>

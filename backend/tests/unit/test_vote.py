@@ -190,6 +190,41 @@ def test_ac029_a_vote_cannot_be_removed_by_other_methods(
     assert _votes_in_store(db_session, idea.id) == 1
 
 
+def test_ac033_a_visitor_vote_is_refused_and_the_count_is_unchanged(
+    client: TestClient, auth_client: TestClient, db_session: Session
+) -> None:
+    idea = _foreign_idea(db_session)
+    assert auth_client.post(f"/ideas/{idea.id}/vote").status_code == 200
+
+    response = client.post(f"/ideas/{idea.id}/vote")
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+    assert _votes_in_store(db_session, idea.id) == 1
+    board = client.get("/ideas").json()
+    assert [(i["id"], i["voteCount"]) for i in board] == [(idea.id, 1)]
+
+
+def test_ac033_a_visitor_is_asked_to_log_in_before_the_idea_is_looked_up(
+    client: TestClient,
+) -> None:
+    response = client.post(f"/ideas/{uuid4()}/vote")
+
+    assert response.status_code == 401
+
+
+def test_ac033_a_visitor_vote_is_refused_with_an_expired_or_forged_token(
+    client: TestClient, db_session: Session
+) -> None:
+    idea = _foreign_idea(db_session)
+    forged = secrets.token_urlsafe()
+
+    response = client.post(f"/ideas/{idea.id}/vote", headers={"Authorization": f"Bearer {forged}"})
+
+    assert response.status_code == 401
+    assert _votes_in_store(db_session, idea.id) == 0
+
+
 def test_nfr004_a_vote_is_refused_without_login_and_records_nothing(
     client: TestClient, db_session: Session
 ) -> None:
