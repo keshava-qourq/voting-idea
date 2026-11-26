@@ -333,3 +333,43 @@ describe("Board ranked list", () => {
     expect(screen.queryByTestId("no-ideas-yet-post-the-first-idea-empty")).toBeNull();
   });
 });
+
+describe("Board personal data", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  // Even if the server sent an author email by mistake, the board must not display it.
+  function ideasWithAuthorEmail() {
+    return [
+      { ...idea("Alpha", 2), authorEmail: "alice@example.com", email: "alice@example.com" },
+      { ...idea("Beta", 1), authorEmail: "bob@example.org", email: "bob@example.org" },
+    ];
+  }
+
+  it("[AC-042] shows no email address to a visitor", async () => {
+    mockGet(ideasWithAuthorEmail());
+    renderAt("/board");
+
+    await screen.findByText("Alpha");
+    expect(screen.getByText("Beta")).toBeInTheDocument();
+    const list = screen.getByTestId("ideas-ranked-by-votes-list");
+    expect(list.textContent).not.toMatch(/@/);
+    expect(document.body.textContent).not.toContain("alice@example.com");
+    expect(document.body.textContent).not.toContain("bob@example.org");
+  });
+
+  it("[AC-042] shows no other user's email address to a signed-in user", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet(ideasWithAuthorEmail());
+    renderAt("/board");
+
+    await screen.findByText("Alpha");
+    const list = screen.getByTestId("ideas-ranked-by-votes-list");
+    expect(list.textContent).not.toMatch(/@/);
+    expect(document.body.textContent).not.toContain("alice@example.com");
+    expect(document.body.textContent).not.toContain("bob@example.org");
+  });
+});
