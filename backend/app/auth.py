@@ -11,6 +11,7 @@ platform always sets it.
 """
 
 import os
+import re
 import secrets
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
@@ -20,9 +21,11 @@ import bcrypt
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app import errors
 from app.api_model import ApiModel
 from app.database import get_db
 from app.models import User
@@ -34,6 +37,8 @@ TOKEN_LIFETIME = timedelta(hours=12)
 _ALGORITHM = "HS256"
 _SECRET = os.getenv("JWT_SECRET_KEY") or secrets.token_urlsafe(32)
 _bearer = HTTPBearer(auto_error=False)
+_EMAIL_FORMAT = re.compile(r"[^@\s]+@[^@\s.]+(\.[^@\s.]+)+")
+_EMAIL_MAX_LENGTH = 255
 # The users table may come from the approved data model, so its key is read, not assumed:
 # an integer key is made by the database, a text key here.
 _KEY_COLUMN = User.__mapper__.primary_key[0]
@@ -71,7 +76,8 @@ def verify_password(password: str, hashed: str) -> bool:
 
 
 def find_user(session: Session, email: str) -> User | None:
-    return session.scalars(select(User).where(User.email == email)).first()
+    """The user with this email, ignoring letter case."""
+    return session.scalars(select(User).where(func.lower(User.email) == email.lower())).first()
 
 
 def ensure_user(session: Session, *, email: str, password: str, role: str) -> bool:
@@ -88,6 +94,39 @@ def ensure_user(session: Session, *, email: str, password: str, role: str) -> bo
     session.add(User(**values))
     session.flush()
     return True
+
+
+class SignupError(Exception):
+    """A sign-up the logic refuses: the error code and the request field to correct."""
+
+    def __init__(self, error: errors.ApiError, field: str) -> None:
+        super().__init__(error.message)
+        self.error = error
+        self.field = field
+
+
+def create_account(session: Session, *, email: str, password: str) -> User:
+    """Validate, then create a user with a salted password hash. Any email domain is accepted.
+
+    No verification step: the caller logs the new user in with `issue_token` at once.
+    """
+    email = email.strip()
+    if len(email) > _EMAIL_MAX_LENGTH or not _EMAIL_FORMAT.fullmatch(email):
+        raise SignupError(errors.EMAIL_INVALID, "email")
+    if not password.strip():
+        raise SignupError(errors.PASSWORD_REQUIRED, "password")
+    taken = SignupError(errors.EMAIL_ALREADY_REGISTERED, "email")
+    try:
+        with session.begin_nested():
+            created = ensure_user(session, email=email, password=password, role=USER_ROLE)
+    except IntegrityError:  # a concurrent sign-up with the same email won the race
+        raise taken from None
+    if not created:
+        raise taken
+    session.commit()
+    user = find_user(session, email)
+    assert user is not None
+    return user
 
 
 def issue_token(user: User) -> str:

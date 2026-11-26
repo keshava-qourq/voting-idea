@@ -21,6 +21,29 @@ class StubResponse(ApiModel):
     detail: str = "Scaffolded from the approved API spec; no behaviour yet."
 
 
+class ErrorResponse(ApiModel):
+    """Body of every error an endpoint returns on purpose."""
+
+    code: str
+    message: str
+    # The request field that needs correcting (email or password), when there is one.
+    field: str | None = None
+
+
+class SignupRequest(ApiModel):
+    # Plain strings: the logic checks them and answers with an error code that names the field.
+    email: str
+    password: str
+
+
+class SignupResponse(ApiModel):
+    """The new account and the token that logs it in at once."""
+
+    token: str
+    user_id: str
+    email: str
+
+
 class UserCreate(ApiModel):
     email: str
     role: str
