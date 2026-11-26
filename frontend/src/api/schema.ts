@@ -169,7 +169,10 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** IdeaCreate */
+        /**
+         * IdeaCreate
+         * @description The idea form: a title of at most 120 characters and a description of at most 500.
+         */
         IdeaCreate: {
             /**
              * Title
@@ -464,6 +467,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdeaRead"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Unprocessable Entity */

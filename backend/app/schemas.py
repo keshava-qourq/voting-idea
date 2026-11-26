@@ -75,6 +75,14 @@ class IdeaRead(ApiModel):
     voted: bool
 
 
+class IdeaCreate(ApiModel):
+    """The idea form: a title of at most 120 characters and a description of at most 500."""
+
+    # Plain strings with defaults: the logic checks them and names the field to correct.
+    title: str = ""
+    description: str = ""
+
+
 class LogoutResponse(ApiModel):
     """Confirms the session token no longer works."""
 

@@ -16,30 +16,18 @@ from app.api_model import ApiModel
 from app.auth import bearer, current_user, user_of_token
 from app.database import get_db
 from app.models import Idea, User, Vote
-from app.schemas import ErrorResponse, IdeaRead
+from app.schemas import ErrorResponse, IdeaCreate, IdeaRead
 
 router = APIRouter(prefix="/ideas", tags=["Ideas"])
 
 TITLE_MAX_LENGTH = 120
 DESCRIPTION_MAX_LENGTH = 500
 
-TITLE_REQUIRED = errors.ApiError("TITLE_REQUIRED", 422, "Enter a title.")
-TITLE_TOO_LONG = errors.ApiError(
-    "TITLE_TOO_LONG", 422, f"The title can have at most {TITLE_MAX_LENGTH} characters."
-)
-DESCRIPTION_REQUIRED = errors.ApiError("DESCRIPTION_REQUIRED", 422, "Enter a description.")
-DESCRIPTION_TOO_LONG = errors.ApiError(
-    "DESCRIPTION_TOO_LONG",
-    422,
-    f"The description can have at most {DESCRIPTION_MAX_LENGTH} characters.",
-)
-IDEA_NOT_FOUND = errors.ApiError("IDEA_NOT_FOUND", 404, "This idea does not exist.")
-
-
-class IdeaCreate(ApiModel):
-    # Plain strings with defaults: the logic checks them and names the field to correct.
-    title: str = ""
-    description: str = ""
+TITLE_REQUIRED = errors.TITLE_REQUIRED
+TITLE_TOO_LONG = errors.TITLE_TOO_LONG
+DESCRIPTION_REQUIRED = errors.DESCRIPTION_REQUIRED
+DESCRIPTION_TOO_LONG = errors.DESCRIPTION_TOO_LONG
+IDEA_NOT_FOUND = errors.IDEA_NOT_FOUND
 
 
 class VoteResponse(ApiModel):
@@ -91,7 +79,7 @@ def list_ideas(
     "",
     status_code=status.HTTP_201_CREATED,
     response_model=IdeaRead,
-    responses={422: {"model": ErrorResponse}},
+    responses={401: {"model": ErrorResponse}, 422: {"model": ErrorResponse}},
 )
 def post_idea(
     body: IdeaCreate,

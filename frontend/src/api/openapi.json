@@ -242,6 +242,16 @@
               }
             }
           },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "422": {
             "description": "Unprocessable Entity",
             "content": {
@@ -401,7 +411,8 @@
           }
         },
         "type": "object",
-        "title": "IdeaCreate"
+        "title": "IdeaCreate",
+        "description": "The idea form: a title of at most 120 characters and a description of at most 500."
       },
       "IdeaRead": {
         "properties": {

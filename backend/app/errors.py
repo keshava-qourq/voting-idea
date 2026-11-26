@@ -16,3 +16,10 @@ NOT_AUTHENTICATED = ApiError("NOT_AUTHENTICATED", 401, "Sign in first.")
 EMAIL_ALREADY_REGISTERED = ApiError(
     "EMAIL_ALREADY_REGISTERED", 409, "This email is already registered."
 )
+TITLE_REQUIRED = ApiError("TITLE_REQUIRED", 422, "Enter a title.")
+TITLE_TOO_LONG = ApiError("TITLE_TOO_LONG", 422, "The title can have at most 120 characters.")
+DESCRIPTION_REQUIRED = ApiError("DESCRIPTION_REQUIRED", 422, "Enter a description.")
+DESCRIPTION_TOO_LONG = ApiError(
+    "DESCRIPTION_TOO_LONG", 422, "The description can have at most 500 characters."
+)
+IDEA_NOT_FOUND = ApiError("IDEA_NOT_FOUND", 404, "This idea does not exist.")
