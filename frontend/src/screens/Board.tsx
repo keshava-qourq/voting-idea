@@ -110,56 +110,56 @@ export default function Screen() {
       </header>
 
       {loggedIn ? null : (
-      <section
-        data-wf="b-1-0"
-        data-testid="log-in-or-sign-up-to-vote-modal"
-        aria-labelledby="vote-prompt"
-        className="mx-auto max-w-xl p-7 text-center"
-        style={frame}
-      >
-        <h2 id="vote-prompt" className="text-sm" style={caps}>
-          Log in or sign up to vote
-        </h2>
-        <div
-          aria-hidden
-          className="mx-auto mt-3 h-px w-12"
-          style={{ backgroundColor: brand.accentColor }}
-        />
-        <div className="mt-5 flex flex-col justify-center gap-4 sm:flex-row">
-          <button
-            type="button"
-            data-wf="i-1-0-0"
-            data-testid="log-in-link"
-            onClick={() => navigate("log-in")}
-            className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
-            style={{
-              backgroundColor: brand.primaryColor,
-              color: brand.accentColor,
-              border: `1px solid ${brand.primaryColor}`,
-              borderRadius: brand.radius,
-              outlineColor: brand.primaryColor,
-            }}
-          >
-            Log in
-          </button>
-          <button
-            type="button"
-            data-wf="i-1-0-1"
-            data-testid="sign-up-link"
-            onClick={() => navigate("sign-up")}
-            className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
-            style={{
-              backgroundColor: "transparent",
-              color: brand.primaryColor,
-              border: `1px solid ${brand.primaryColor}`,
-              borderRadius: brand.radius,
-              outlineColor: brand.primaryColor,
-            }}
-          >
-            Sign up
-          </button>
-        </div>
-      </section>
+        <section
+          data-wf="b-1-0"
+          data-testid="log-in-or-sign-up-to-vote-modal"
+          aria-labelledby="vote-prompt"
+          className="mx-auto max-w-xl p-7 text-center"
+          style={frame}
+        >
+          <h2 id="vote-prompt" className="text-sm" style={caps}>
+            Log in or sign up to vote
+          </h2>
+          <div
+            aria-hidden
+            className="mx-auto mt-3 h-px w-12"
+            style={{ backgroundColor: brand.accentColor }}
+          />
+          <div className="mt-5 flex flex-col justify-center gap-4 sm:flex-row">
+            <button
+              type="button"
+              data-wf="i-1-0-0"
+              data-testid="log-in-link"
+              onClick={() => navigate("log-in")}
+              className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
+              style={{
+                backgroundColor: brand.primaryColor,
+                color: brand.accentColor,
+                border: `1px solid ${brand.primaryColor}`,
+                borderRadius: brand.radius,
+                outlineColor: brand.primaryColor,
+              }}
+            >
+              Log in
+            </button>
+            <button
+              type="button"
+              data-wf="i-1-0-1"
+              data-testid="sign-up-link"
+              onClick={() => navigate("sign-up")}
+              className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
+              style={{
+                backgroundColor: "transparent",
+                color: brand.primaryColor,
+                border: `1px solid ${brand.primaryColor}`,
+                borderRadius: brand.radius,
+                outlineColor: brand.primaryColor,
+              }}
+            >
+              Sign up
+            </button>
+          </div>
+        </section>
       )}
 
       <section data-wf="b-2-0" aria-labelledby="ranked-heading" className="space-y-4">

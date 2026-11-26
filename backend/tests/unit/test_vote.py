@@ -37,9 +37,7 @@ def _votes_in_store(db_session: Session, idea_id: str) -> int:
     return db_session.scalar(count) or 0
 
 
-def test_ac027_a_first_vote_adds_exactly_one(
-    auth_client: TestClient, db_session: Session
-) -> None:
+def test_ac027_a_first_vote_adds_exactly_one(auth_client: TestClient, db_session: Session) -> None:
     idea = _foreign_idea(db_session)
 
     response = auth_client.post(f"/ideas/{idea.id}/vote")
@@ -67,9 +65,7 @@ def test_ac027_the_board_order_follows_the_new_vote(
     ]
 
 
-def test_ac027_a_repeat_vote_changes_nothing(
-    auth_client: TestClient, db_session: Session
-) -> None:
+def test_ac027_a_repeat_vote_changes_nothing(auth_client: TestClient, db_session: Session) -> None:
     idea = _foreign_idea(db_session)
     auth_client.post(f"/ideas/{idea.id}/vote")
 
@@ -80,9 +76,7 @@ def test_ac027_a_repeat_vote_changes_nothing(
     assert _votes_in_store(db_session, idea.id) == 1
 
 
-def test_ac027_different_users_each_add_one(
-    auth_client: TestClient, db_session: Session
-) -> None:
+def test_ac027_different_users_each_add_one(auth_client: TestClient, db_session: Session) -> None:
     idea = _foreign_idea(db_session)
     other = Vote(
         id=str(uuid4()),
