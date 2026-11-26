@@ -150,6 +150,22 @@ def user_of_token(
     return session.get(User, key)
 
 
+def revoke_token(session: Session, credentials: HTTPAuthorizationCredentials | None) -> bool:
+    """End the session the token names, at once. False when it names no live session.
+
+    The session row is deleted, so the token is refused from then on, back button or not.
+    """
+    if user_of_token(session, credentials) is None:
+        return False
+    assert credentials is not None
+    claims = jwt.decode(credentials.credentials, _SECRET, algorithms=[_ALGORITHM])
+    login = session.get(UserSession, str(claims["sid"]))
+    if login is not None:
+        session.delete(login)
+        session.commit()
+    return True
+
+
 def current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
     session: Annotated[Session, Depends(get_db)],

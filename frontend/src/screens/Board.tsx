@@ -81,7 +81,7 @@ export default function Screen() {
     <div className="space-y-8" style={{ color: brand.primaryColor, fontFamily: brand.fontBody }}>
       <style>{`@media (prefers-reduced-motion: no-preference){.deco-btn{transition:opacity .15s ease}.deco-btn:hover{opacity:.85}}`}</style>
       <header className="space-y-4 text-center">
-        <h1 className="text-3xl" style={caps}>
+        <h1 data-testid="ideas-board-title" className="text-3xl" style={caps}>
           {SCREEN}
         </h1>
         <p
@@ -95,6 +95,7 @@ export default function Screen() {
 
       <section
         data-wf="b-1-0"
+        data-testid="log-in-or-sign-up-to-vote-modal"
         aria-labelledby="vote-prompt"
         className="mx-auto max-w-xl p-7 text-center"
         style={frame}
@@ -111,6 +112,7 @@ export default function Screen() {
           <button
             type="button"
             data-wf="i-1-0-0"
+            data-testid="log-in-link"
             onClick={() => navigate("log-in")}
             className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
             style={{
@@ -126,6 +128,7 @@ export default function Screen() {
           <button
             type="button"
             data-wf="i-1-0-1"
+            data-testid="sign-up-link"
             onClick={() => navigate("sign-up")}
             className={`deco-btn h-11 min-w-[8rem] px-6 text-xs uppercase tracking-[0.25em] ${focusCls}`}
             style={{
@@ -145,7 +148,7 @@ export default function Screen() {
         <h2 id="ranked-heading" className="text-center text-sm" style={caps}>
           Ideas ranked by votes
         </h2>
-        <ul className="grid gap-7">
+        <ul data-testid="ideas-ranked-by-votes-list" className="grid gap-7">
           {ranked.map((idea) => (
             <li
               key={idea.id}
@@ -199,6 +202,7 @@ export default function Screen() {
       <button
         type="button"
         data-wf="b-3-0"
+        data-testid="no-ideas-yet-post-the-first-idea-empty"
         onClick={() => navigate("post-idea")}
         className={`deco-btn mx-auto block w-full max-w-xl p-7 text-center ${focusCls}`}
         style={{

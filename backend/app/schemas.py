@@ -61,6 +61,12 @@ class LoginRequest(ApiModel):
     password: str
 
 
+class LogoutResponse(ApiModel):
+    """Confirms the session token no longer works."""
+
+    logged_out: bool
+
+
 class LoginResponse(ApiModel):
     """The session token and the user it belongs to."""
 

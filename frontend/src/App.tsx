@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { NavLink, Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
 import { api } from "@/api/client";
 import { clearSessionToken } from "@/lib/api";
@@ -18,6 +26,7 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 // The app's menu, drawn around every screen except the ones routed outside it below.
 function AppShellLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   // undefined while GET /auth/me is pending, null when logged out or the session has expired.
   const [user, setUser] = useState<{ email: string } | null | undefined>(undefined);
 
@@ -37,9 +46,17 @@ function AppShellLayout() {
     };
   }, [location.pathname]);
 
-  const logOut = () => {
+  // Ends the session on the server first (it needs the token), then drops the local one
+  // whatever the answer, and shows the board as a visitor.
+  const logOut = async () => {
+    try {
+      await api.POST("/auth/logout");
+    } catch {
+      // The server is unreachable: the local session is still dropped below.
+    }
     clearSessionToken();
     setUser(null);
+    navigate("/board", { replace: true });
   };
 
   // Posting needs a session: a logged-out or expired one is sent back to log in.

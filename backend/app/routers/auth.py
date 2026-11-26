@@ -14,6 +14,7 @@ from app.auth import (
     create_account,
     find_user,
     issue_token,
+    revoke_token,
     user_of_token,
     verify_password,
 )
@@ -22,6 +23,7 @@ from app.schemas import (
     ErrorResponse,
     LoginRequest,
     LoginResponse,
+    LogoutResponse,
     SignupRequest,
     SignupResponse,
     UserRead,
@@ -87,6 +89,26 @@ def login(
         token=issue_token(session, user),
         user=UserRead(id=str(user.id), email=user.email, role=user.role),
     )
+
+
+@router.post(
+    "/logout",
+    response_model=LogoutResponse,
+    responses={
+        errors.NOT_AUTHENTICATED.status: {
+            "model": ErrorResponse,
+            "description": errors.NOT_AUTHENTICATED.message,
+        },
+    },
+)
+def logout(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer)],
+    session: Annotated[Session, Depends(get_db)],
+) -> LogoutResponse | JSONResponse:
+    """End the current session at once: its token stops working for every later request."""
+    if not revoke_token(session, credentials):
+        return _error(errors.NOT_AUTHENTICATED)
+    return LogoutResponse(logged_out=True)
 
 
 @router.get(

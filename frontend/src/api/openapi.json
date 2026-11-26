@@ -110,6 +110,43 @@
         }
       }
     },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "End the current session at once: its token stops working for every later request.",
+        "operationId": "logout_auth_logout_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogoutResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sign in first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/auth/me": {
       "get": {
         "tags": [
@@ -251,6 +288,20 @@
         ],
         "title": "LoginResponse",
         "description": "The session token and the user it belongs to."
+      },
+      "LogoutResponse": {
+        "properties": {
+          "loggedOut": {
+            "type": "boolean",
+            "title": "Loggedout"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loggedOut"
+        ],
+        "title": "LogoutResponse",
+        "description": "Confirms the session token no longer works."
       },
       "SignupRequest": {
         "properties": {
