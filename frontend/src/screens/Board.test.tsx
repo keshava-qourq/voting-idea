@@ -69,11 +69,89 @@ describe("Board log out", () => {
   });
 
   it("[AC-013] a visitor who tries to vote is sent to log in", async () => {
-    get.mockResolvedValue({ error: { detail: "Sign in first" }, response: { status: 401 } });
+    mockGet([idea("Dark mode", 3)]);
     renderAt("/board");
 
     fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
 
     expect(await screen.findByTestId("log-in-btn")).toBeInTheDocument();
+  });
+});
+
+function idea(title: string, voteCount: number, voted = false) {
+  return {
+    id: "id-" + title,
+    title,
+    description: "About " + title,
+    voteCount,
+    createdAt: "2026-11-02T09:00:00Z",
+    voted,
+  };
+}
+
+// GET /ideas answers with the given ideas; every other GET is a visitor's 401.
+function mockGet(ideas: ReturnType<typeof idea>[] | "fail") {
+  get.mockImplementation((path: string) => {
+    if (path === "/ideas") {
+      return ideas === "fail"
+        ? Promise.reject(new Error("network"))
+        : Promise.resolve({ data: ideas, response: { status: 200 } });
+    }
+    return Promise.resolve({ error: { detail: "Sign in first" }, response: { status: 401 } });
+  });
+}
+
+describe("Board ranked list", () => {
+  beforeEach(() => {
+    get.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-014] lists the ideas in the order the API returns them, without logging in", async () => {
+    mockGet([idea("Alpha", 9), idea("Beta", 4), idea("Gamma", 0)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const titles = Array.from(list.querySelectorAll("h3")).map((h) => h.textContent);
+    expect(titles).toEqual(["Alpha", "Beta", "Gamma"]);
+    expect(get).toHaveBeenCalledWith("/ideas");
+    expect(screen.queryByTestId("no-ideas-yet-post-the-first-idea-empty")).toBeNull();
+  });
+
+  it("[AC-015] shows each idea with its current vote count", async () => {
+    mockGet([idea("Alpha", 5), idea("Beta", 1)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const items = list.querySelectorAll("li");
+    expect(items[0].textContent).toContain("5 votes");
+    expect(items[1].textContent).toContain("1 vote");
+  });
+
+  it("[AC-015] marks an idea I have voted for", async () => {
+    mockGet([idea("Alpha", 5, true), idea("Beta", 1)]);
+    renderAt("/board");
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Vote for Alpha/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /Vote for Beta/ })).toBeInTheDocument();
+  });
+
+  it("[AC-016] shows the empty-state message when no ideas exist", async () => {
+    mockGet([]);
+    renderAt("/board");
+
+    const empty = await screen.findByTestId("no-ideas-yet-post-the-first-idea-empty");
+    expect(empty).toHaveTextContent("No ideas yet. Post the first idea!");
+    expect(screen.queryByTestId("ideas-ranked-by-votes-list")).toBeNull();
+  });
+
+  it("[AC-016] shows no empty-state message while the ideas load or when they fail", async () => {
+    mockGet("fail");
+    renderAt("/board");
+
+    expect(screen.queryByTestId("no-ideas-yet-post-the-first-idea-empty")).toBeNull();
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not load the ideas.");
+    expect(screen.queryByTestId("no-ideas-yet-post-the-first-idea-empty")).toBeNull();
   });
 });

@@ -16,7 +16,7 @@ from app.api_model import ApiModel
 from app.auth import bearer, current_user, user_of_token
 from app.database import get_db
 from app.models import Idea, User, Vote
-from app.schemas import ErrorResponse
+from app.schemas import ErrorResponse, IdeaRead
 
 router = APIRouter(prefix="/ideas", tags=["Ideas"])
 
@@ -40,15 +40,6 @@ class IdeaCreate(ApiModel):
     # Plain strings with defaults: the logic checks them and names the field to correct.
     title: str = ""
     description: str = ""
-
-
-class IdeaRead(ApiModel):
-    id: str
-    title: str
-    description: str
-    vote_count: int
-    created_at: datetime
-    voted: bool
 
 
 class VoteResponse(ApiModel):
