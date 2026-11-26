@@ -23,7 +23,6 @@ TITLE_MAX_LENGTH = 120
 DESCRIPTION_MAX_LENGTH = 500
 
 
-
 def _error(error: errors.ApiError, field: str | None = None) -> JSONResponse:
     content = ErrorResponse(code=error.code, message=error.message, field=field)
     return JSONResponse(status_code=error.status, content=content.model_dump(by_alias=True))
