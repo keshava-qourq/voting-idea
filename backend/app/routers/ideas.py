@@ -22,12 +22,6 @@ router = APIRouter(prefix="/ideas", tags=["Ideas"])
 TITLE_MAX_LENGTH = 120
 DESCRIPTION_MAX_LENGTH = 500
 
-TITLE_REQUIRED = errors.TITLE_REQUIRED
-TITLE_TOO_LONG = errors.TITLE_TOO_LONG
-DESCRIPTION_REQUIRED = errors.DESCRIPTION_REQUIRED
-DESCRIPTION_TOO_LONG = errors.DESCRIPTION_TOO_LONG
-IDEA_NOT_FOUND = errors.IDEA_NOT_FOUND
-
 
 def _error(error: errors.ApiError, field: str | None = None) -> JSONResponse:
     content = ErrorResponse(code=error.code, message=error.message, field=field)
@@ -83,13 +77,13 @@ def post_idea(
     title = body.title.strip()
     description = body.description.strip()
     if not title:
-        return _error(TITLE_REQUIRED, "title")
+        return _error(errors.TITLE_REQUIRED, "title")
     if len(title) > TITLE_MAX_LENGTH:
-        return _error(TITLE_TOO_LONG, "title")
+        return _error(errors.TITLE_TOO_LONG, "title")
     if not description:
-        return _error(DESCRIPTION_REQUIRED, "description")
+        return _error(errors.DESCRIPTION_REQUIRED, "description")
     if len(description) > DESCRIPTION_MAX_LENGTH:
-        return _error(DESCRIPTION_TOO_LONG, "description")
+        return _error(errors.DESCRIPTION_TOO_LONG, "description")
     idea = Idea(
         id=str(uuid4()),
         user_id=user.id,
@@ -121,7 +115,7 @@ def vote(
 ) -> VoteResponse | JSONResponse:
     """Upvote an idea. A repeat vote by the same user changes nothing."""
     if session.get(Idea, idea_id) is None:
-        return _error(IDEA_NOT_FOUND)
+        return _error(errors.IDEA_NOT_FOUND)
     existing = session.scalar(
         select(Vote.id).where(Vote.user_id == user.id, Vote.idea_id == idea_id)
     )

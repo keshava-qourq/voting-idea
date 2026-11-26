@@ -10,7 +10,7 @@ import {
 } from "react-router-dom";
 
 import { api } from "@/api/client";
-import { clearSessionToken } from "@/lib/api";
+import { clearSessionToken, getSessionToken, subscribeSession } from "@/lib/api";
 import { Icons } from "@/lib/icons";
 import Board from "@/screens/Board";
 import PostIdea from "@/screens/PostIdea";
@@ -109,11 +109,39 @@ function AppShellLayout() {
           ) : null}
         </div>
       </header>
-      <main className="min-w-0 flex-1 overflow-x-hidden">
+      <main
+        className="min-w-0 flex-1 overflow-x-hidden"
+        onSubmitCapture={() => {
+          // A visitor (or an expired session) who tries to post is taken to the Log In screen;
+          // the server refuses the post anyway.
+          if (user === null && location.pathname === "/post-idea") {
+            navigate("/log-in", { state: { from: "post-idea" } });
+          }
+        }}
+      >
         <Outlet />
       </main>
     </div>
   );
+}
+
+// Signing in must not leave the Log In form as the entry behind the board: after logging out,
+// the browser's back button would otherwise land on the form instead of the visitor's board.
+// The moment the session token is set, the form's own history entry is replaced by the screen
+// the person is headed to.
+function LogInRoute() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const from = (location.state as { from?: string } | null)?.from;
+  const target = from === "post-idea" ? "/post-idea" : "/board";
+  useEffect(
+    () =>
+      subscribeSession(() => {
+        if (getSessionToken()) navigate(target, { replace: true });
+      }),
+    [navigate, target],
+  );
+  return <LogIn />;
 }
 
 export default function App() {
@@ -124,7 +152,7 @@ export default function App() {
         <Route path="/post-idea" element={<PostIdea />} />
       </Route>
       <Route path="/sign-up" element={<SignUp />} />
-      <Route path="/log-in" element={<LogIn />} />
+      <Route path="/log-in" element={<LogInRoute />} />
       <Route path="*" element={<Navigate to="/board" replace />} />
     </Routes>
   );
