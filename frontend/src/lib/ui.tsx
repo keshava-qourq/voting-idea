@@ -25,9 +25,9 @@ const BUTTON_VARIANTS: Record<string, string> = {
 };
 
 const BUTTON_SIZES: Record<string, string> = {
-  sm: "h-8 px-3 text-sm",
-  md: "h-9 px-4 text-sm",
-  lg: "h-11 px-6 text-base",
+  sm: "h-11 px-3 text-sm sm:h-8",
+  md: "h-11 px-4 text-sm sm:h-9",
+  lg: "h-12 px-6 text-base sm:h-11",
 };
 
 export function Button({
@@ -104,7 +104,7 @@ const FIELD =
   "focus:ring-1 focus:ring-[var(--brand-primary)]";
 
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className={cx(FIELD, "h-9", className)} />;
+  return <input {...props} className={cx(FIELD, "h-11 sm:h-9", className)} />;
 }
 
 export function Textarea({

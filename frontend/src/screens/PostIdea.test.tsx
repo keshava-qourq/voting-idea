@@ -124,3 +124,41 @@ describe("Post an Idea", () => {
     expect(await screen.findByText("Log in or sign up to post an idea")).toBeInTheDocument();
   });
 });
+
+describe("Post an Idea responsive layout", () => {
+  beforeEach(() => {
+    post.mockReset();
+    get.mockReset();
+    loggedIn();
+  });
+
+  it("[AC-035] the form fits a phone and its controls are tap sized", async () => {
+    const { container } = renderScreen();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+
+    expect(container.firstElementChild!.className).toContain("min-w-0");
+    expect(screen.getByTestId("title-max-80-characters-input").className).toContain("h-11");
+    expect(screen.getByTestId("submit-idea-btn").className).toContain("h-11");
+    expect(screen.getByTestId("submit-idea-btn")).toHaveStyle({ minHeight: "48px" });
+    expect(screen.getByTestId("cancel-link")).toHaveStyle({ minHeight: "48px" });
+  });
+
+  it("[AC-036] on desktop the form stays in a readable column", () => {
+    const { container } = renderScreen();
+
+    const card = container.querySelector('[data-layout="post-card"]')!;
+    expect(card).toHaveStyle({ maxWidth: "640px" });
+    expect(card.className).toContain("mx-auto");
+  });
+
+  it("[AC-037] posting still works", async () => {
+    post.mockResolvedValue({
+      data: { id: "i1", title: "T", description: "D", voteCount: 0 },
+      response: { status: 201 },
+    });
+    renderScreen();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    submit("Free coffee", "Coffee on Fridays");
+    expect(await screen.findByText(/Idea posted with zero votes/)).toBeInTheDocument();
+  });
+});

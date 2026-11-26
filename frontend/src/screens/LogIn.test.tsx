@@ -139,3 +139,35 @@ describe("Log In", () => {
     expect(screen.getByTestId("create-your-account-title")).toBeInTheDocument();
   });
 });
+
+describe("Log In responsive layout", () => {
+  beforeEach(() => {
+    post.mockReset();
+    get.mockReset();
+    get.mockResolvedValue({ error: { detail: "Sign in first" }, response: { status: 401 } });
+    window.localStorage.clear();
+  });
+
+  it("[AC-035] the card shrinks to a phone and the fields and button are tap sized", () => {
+    const { container } = renderAt("/log-in");
+
+    expect(container.querySelector('[data-layout="auth-card"]')!.className).toContain("px-5");
+    expect(screen.getByTestId("email-input").className).toContain("h-11");
+    expect(screen.getByTestId("password-input").className).toContain("h-11");
+    expect(screen.getByTestId("log-in-btn")).toHaveStyle({ minHeight: "52px" });
+    expect(screen.getByTestId("new-here-sign-up-link")).toHaveStyle({ minHeight: "44px" });
+  });
+
+  it("[AC-037] a log in still completes and opens the board", async () => {
+    post.mockResolvedValue({
+      data: {
+        token: "t-" + crypto.randomUUID(),
+        user: { id: "u1", email: "a@b.io", role: "user" },
+      },
+      response: { status: 200 },
+    });
+    renderAt("/log-in");
+    fill("a@b.io", crypto.randomUUID());
+    expect(await screen.findByTestId("ideas-board-title")).toBeInTheDocument();
+  });
+});

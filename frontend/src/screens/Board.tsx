@@ -102,10 +102,18 @@ export default function Screen() {
   );
 
   return (
-    <div className="space-y-8" style={{ color: brand.primaryColor, fontFamily: brand.fontBody }}>
+    <div
+      data-layout="board"
+      className="mx-auto w-full min-w-0 max-w-5xl space-y-8 px-4 py-6 sm:px-6 sm:py-10"
+      style={{ color: brand.primaryColor, fontFamily: brand.fontBody }}
+    >
       <style>{`@media (prefers-reduced-motion: no-preference){.deco-btn{transition:opacity .15s ease}.deco-btn:hover{opacity:.85}}`}</style>
       <header className="space-y-4 text-center">
-        <h1 data-testid="ideas-board-title" className="text-3xl" style={caps}>
+        <h1
+          data-testid="ideas-board-title"
+          className="break-words text-2xl sm:text-3xl"
+          style={caps}
+        >
           {SCREEN}
         </h1>
         <p
@@ -123,7 +131,7 @@ export default function Screen() {
           data-testid="log-in-or-sign-up-to-vote-modal"
           role="dialog"
           aria-labelledby="vote-prompt"
-          className="mx-auto max-w-xl p-7 text-center"
+          className="mx-auto w-full max-w-xl p-5 text-center sm:p-7"
           style={frame}
         >
           <h2 id="vote-prompt" className="text-sm" style={caps}>
@@ -191,14 +199,17 @@ export default function Screen() {
           </p>
         ) : null}
         {ideas && ideas.length > 0 ? (
-          <ul data-testid="ideas-ranked-by-votes-list" className="grid gap-7">
+          <ul
+            data-testid="ideas-ranked-by-votes-list"
+            className="mx-auto grid w-full max-w-3xl gap-5 sm:gap-7"
+          >
             {ideas.map((idea) => (
               <li
                 key={idea.id}
-                className="flex flex-col items-center gap-4 p-7 text-center sm:flex-row sm:text-left"
+                className="flex min-w-0 flex-col items-center gap-4 p-4 text-center sm:flex-row sm:p-7 sm:text-left"
                 style={frame}
               >
-                <div className="flex-1">
+                <div className="min-w-0 flex-1 break-words">
                   <h3 className="text-sm" style={caps}>
                     {idea.title}
                   </h3>
@@ -258,7 +269,7 @@ export default function Screen() {
           data-wf="b-3-0"
           data-testid="no-ideas-yet-post-the-first-idea-empty"
           onClick={() => navigate("post-idea")}
-          className={`deco-btn mx-auto block w-full max-w-xl p-7 text-center ${focusCls}`}
+          className={`deco-btn mx-auto block w-full max-w-xl p-5 text-center sm:p-7 ${focusCls}`}
           style={{
             ...frame,
             backgroundColor: "transparent",

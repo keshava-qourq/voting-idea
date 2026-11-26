@@ -129,7 +129,7 @@ export default function Screen() {
 
   return (
     <main
-      className="min-h-screen w-full flex items-center justify-center px-4 py-12"
+      className="min-h-screen w-full min-w-0 flex items-center justify-center overflow-x-hidden px-4 py-8 sm:py-12"
       style={{ backgroundColor: brand.backgroundColor, color: primary, fontFamily: brand.fontBody }}
     >
       <style>{`
@@ -147,11 +147,12 @@ export default function Screen() {
       <div style={{ width: "100%", maxWidth: 480, padding: 8 }}>
         {/* double frame: accent hairline, primary outline offset outside */}
         <div
+          data-layout="auth-card"
+          className="px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-12"
           style={{
             border: `1px solid ${accent}`,
             outline: `1px solid ${primary}`,
             outlineOffset: 6,
-            padding: "48px 32px 40px",
             backgroundColor: brand.backgroundColor,
           }}
         >
@@ -174,7 +175,8 @@ export default function Screen() {
                 fontFamily: brand.fontHeading,
                 textTransform: "uppercase",
                 letterSpacing: "0.14em",
-                fontSize: 32,
+                fontSize: "clamp(24px, 8vw, 32px)",
+                overflowWrap: "anywhere",
                 lineHeight: 1.2,
                 fontWeight: 700,
               }}

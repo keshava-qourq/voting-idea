@@ -170,7 +170,7 @@ export default function Screen() {
         fontFamily: brand.fontBody,
         minHeight: "100%",
       }}
-      className="px-4 py-8 sm:py-12"
+      className="min-w-0 overflow-x-hidden px-4 py-8 sm:py-12"
     >
       <style>{`
         .gp-focus:focus-visible, .gp-focus input:focus-visible, .gp-focus textarea:focus-visible { outline: 3px solid ${ink}; outline-offset: 3px; }
@@ -185,7 +185,7 @@ export default function Screen() {
         @media (prefers-reduced-motion: reduce) { .gp-in { animation: none; } .gp-btn { transition: none; } .gp-btn:not(:disabled):hover { transform: none; } }
       `}</style>
 
-      <div className="mx-auto" style={{ maxWidth: 640 }}>
+      <div className="mx-auto w-full min-w-0" data-layout="post-card" style={{ maxWidth: 640 }}>
         {/* Double frame: outer primary outline offset outside the gold frame */}
         <div
           style={{
@@ -194,7 +194,7 @@ export default function Screen() {
             border: "1px solid " + gold,
             backgroundColor: brand.backgroundColor,
           }}
-          className="p-6 sm:p-12 mx-1.5"
+          className="p-5 sm:p-12 mx-1.5"
         >
           <div className="text-center">
             <p style={{ ...label, fontSize: 12, opacity: 0.8, letterSpacing: "0.28em" }}>

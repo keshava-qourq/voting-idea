@@ -15,7 +15,41 @@
   --brand-background: #eef1e6;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
 body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+img,
+svg,
+video {
+  max-width: 100%;
+}
+
+/* 16px fields stop mobile browsers from zooming the page on focus. */
+input,
+select,
+textarea {
+  font-size: 16px;
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+body {
+  min-width: 0;
   background: var(--brand-background);
   color: var(--brand-fg);
   font-family: var(--brand-font-body);

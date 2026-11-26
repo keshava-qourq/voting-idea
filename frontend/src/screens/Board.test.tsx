@@ -469,3 +469,60 @@ describe("Board personal data", () => {
     expect(document.body.textContent).not.toContain("bob@example.org");
   });
 });
+
+describe("Board responsive layout", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-035] the board and its vote buttons fit a phone and are tap sized", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    const { container } = renderAt("/board");
+
+    const vote = await screen.findByRole("button", { name: /Vote for Dark mode/ });
+    expect(vote.className).toContain("h-11");
+    expect(vote.className).toContain("w-11");
+    const board = container.querySelector('[data-layout="board"]')!;
+    expect(board.className).toContain("w-full");
+    expect(board.className).toContain("min-w-0");
+    const item = screen.getByTestId("ideas-ranked-by-votes-list").querySelector("li")!;
+    expect(item.className).toContain("flex-col");
+  });
+
+  it("[AC-036] on desktop the ideas sit in a readable centred column", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    const { container } = renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(list.className).toContain("max-w-3xl");
+    expect(list.className).toContain("mx-auto");
+    expect(list.querySelector("li")!.className).toContain("sm:flex-row");
+    expect(container.querySelector('[data-layout="board"]')!.className).toContain("max-w-5xl");
+  });
+
+  it("[AC-035] the log in or sign up prompt buttons are tap sized", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+
+    expect(await screen.findByTestId("log-in-link")).toHaveClass("h-11");
+    expect(screen.getByTestId("sign-up-link")).toHaveClass("h-11");
+  });
+
+  it("[AC-037] voting works: a logged in member votes and sees 'You have voted'", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Dark mode", 3)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Dark mode", voteCount: 4, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Dark mode" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+  });
+});
