@@ -171,6 +171,37 @@ describe("Board ranked list", () => {
     expect(screen.getByRole("button", { name: /Vote for Beta/ })).toBeInTheDocument();
   });
 
+  it("[AC-019] shows the title, short description and vote count of every idea, zero included", async () => {
+    mockGet([idea("Alpha", 5), idea("Beta", 0)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const items = list.querySelectorAll("li");
+    expect(items).toHaveLength(2);
+    expect(items[0]).toHaveTextContent("Alpha");
+    expect(items[0]).toHaveTextContent("About Alpha");
+    expect(items[0]).toHaveTextContent("5 votes");
+    expect(items[1]).toHaveTextContent("Beta");
+    expect(items[1]).toHaveTextContent("About Beta");
+    expect(items[1]).toHaveTextContent("0 votes");
+  });
+
+  it("[AC-020] shows no edit, delete, comment or category control on any idea", async () => {
+    mockGet([idea("Alpha", 5, true), idea("Beta", 0)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const forbidden = /edit|delete|remove|comment|categor/i;
+    for (const item of Array.from(list.querySelectorAll("li"))) {
+      expect(item.querySelector("input, textarea, select, a")).toBeNull();
+      for (const control of Array.from(item.querySelectorAll("button"))) {
+        expect(control.getAttribute("aria-label") ?? control.textContent).not.toMatch(forbidden);
+      }
+    }
+    expect(screen.queryByRole("button", { name: forbidden })).toBeNull();
+    expect(screen.queryByRole("textbox")).toBeNull();
+  });
+
   it("[AC-016] shows the empty-state message when no ideas exist", async () => {
     mockGet([]);
     renderAt("/board");
