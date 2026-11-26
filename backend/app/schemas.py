@@ -53,3 +53,18 @@ class UserRead(ApiModel):
     id: str
     email: str
     role: str
+
+
+class LoginRequest(ApiModel):
+    # Plain strings: a wrong or unknown pair gets the same generic 401, whatever its shape.
+    email: str
+    password: str
+
+
+class LoginResponse(ApiModel):
+    """The session token and the user it belongs to."""
+
+    # "token", not "access_token": one word reads the same in camelCase, and it is a name
+    # the platform's smoke check looks for.
+    token: str
+    user: UserRead

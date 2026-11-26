@@ -6,56 +6,47 @@ import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { useNavigate } from "@/lib/navigate";
+import { api } from "@/api/client";
+import { setSessionToken } from "@/lib/api";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { Input, Label } = UI;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const { Check } = Icons;
+
+// One message for an unknown email and a wrong password: it never says which was wrong.
+const LOGIN_FAILED = "Incorrect email or password";
+const GENERIC_ERROR = "Something went wrong. Try again.";
 
 export default function Screen() {
   const navigate = useNavigate();
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
-  const [errors, setErrors] = React.useState({});
   const [formError, setFormError] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const timer = React.useRef(null);
-
-  React.useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, []);
 
   const ink = brand.primaryColor;
   const gold = brand.accentColor;
 
-  const validate = () => {
-    const e = {};
-    if (!email.trim()) e.email = "Enter the email address you signed up with.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
-      e.email = "That email address is missing an @ or a domain. Check it and try again.";
-    if (!password) e.password = "Enter your password.";
-    return e;
-  };
-
-  const submit = (ev) => {
+  const submit = async (ev) => {
     ev.preventDefault();
     if (loading) return;
-    const e = validate();
-    setErrors(e);
     setFormError("");
-    if (Object.keys(e).length) return;
     setLoading(true);
-    timer.current = setTimeout(() => {
-      setLoading(false);
-      // Prototype rule: passwords under eight characters do not match an account.
-      if (password.length < 8) {
-        setFormError("That email and password do not match an account. Check both and try again.");
+    try {
+      const { data, response } = await api.POST("/auth/login", {
+        body: { email: email.trim(), password },
+      });
+      if (data) {
+        setSessionToken(data.token);
+        navigate("board");
         return;
       }
-      navigate("board");
-    }, 700);
+      const status = response && response.status;
+      setFormError(status === 401 || status === 422 ? LOGIN_FAILED : GENERIC_ERROR);
+    } catch {
+      setFormError(GENERIC_ERROR);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const Rule = () => (
@@ -169,6 +160,7 @@ export default function Screen() {
                 Idea Voting Board
               </span>
               <h1
+                data-testid="log-in-title"
                 style={{
                   fontFamily: brand.fontHeading,
                   fontSize: 36,
@@ -186,7 +178,7 @@ export default function Screen() {
             </div>
 
             <div data-wf="b-1-0" style={{ width: "100%" }}>
-              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>Please log in to continue.</p>
+              <p style={{ margin: 0, fontSize: 16, lineHeight: 1.5 }}>Please log in to continue</p>
               <p style={{ margin: "8px 0 0", fontSize: 13, lineHeight: 1.5 }}>
                 Voting and posting need an account. You will return to the board once you are in.
               </p>
@@ -194,6 +186,7 @@ export default function Screen() {
 
             <form
               id="login-form"
+              data-testid="log-in-form"
               data-wf="b-2-0"
               aria-label="Log in"
               onSubmit={submit}
@@ -239,7 +232,7 @@ export default function Screen() {
                     >
                       Could not log you in
                     </strong>
-                    {formError}
+                    <span>{formError}</span>
                   </div>
                 </div>
               )}
@@ -256,26 +249,11 @@ export default function Screen() {
                   name="email"
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    if (errors.email) setErrors({ ...errors, email: undefined });
-                  }}
-                  aria-invalid={errors.email ? "true" : "false"}
-                  aria-describedby={errors.email ? "login-email-err" : undefined}
+                  data-testid="email-input"
+                  onChange={(e) => setEmail(e.target.value)}
                   disabled={loading}
-                  style={fieldStyle(!!errors.email)}
+                  style={fieldStyle(!!formError)}
                 />
-                {errors.email && (
-                  <div id="login-email-err" className="gb-msg" style={msgStyle}>
-                    <Icons.AlertCircle
-                      aria-hidden="true"
-                      width={16}
-                      height={16}
-                      style={{ flexShrink: 0, marginTop: 2 }}
-                    />
-                    <span>{errors.email}</span>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -290,26 +268,11 @@ export default function Screen() {
                   name="password"
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    if (errors.password) setErrors({ ...errors, password: undefined });
-                  }}
-                  aria-invalid={errors.password ? "true" : "false"}
-                  aria-describedby={errors.password ? "login-password-err" : undefined}
+                  data-testid="password-input"
+                  onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
-                  style={fieldStyle(!!errors.password)}
+                  style={fieldStyle(!!formError)}
                 />
-                {errors.password && (
-                  <div id="login-password-err" className="gb-msg" style={msgStyle}>
-                    <Icons.AlertCircle
-                      aria-hidden="true"
-                      width={16}
-                      height={16}
-                      style={{ flexShrink: 0, marginTop: 2 }}
-                    />
-                    <span>{errors.password}</span>
-                  </div>
-                )}
               </div>
             </form>
 
@@ -317,6 +280,7 @@ export default function Screen() {
               <button
                 type="submit"
                 form="login-form"
+                data-testid="log-in-btn"
                 data-wf="i-3-0"
                 disabled={loading}
                 aria-busy={loading ? "true" : "false"}
@@ -371,6 +335,7 @@ export default function Screen() {
               <Rule />
               <button
                 type="button"
+                data-testid="new-here-sign-up-link"
                 data-wf="i-4-0"
                 className="gb-link gb-focus"
                 onClick={() => navigate("sign-up")}

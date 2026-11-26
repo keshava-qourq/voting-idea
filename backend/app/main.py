@@ -15,7 +15,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
 
-from app import auth
 from app.database import DATABASE_URL, engine
 from app.routers import auth as auth_routes
 from app.seed import seed_from_env
@@ -88,7 +87,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(auth.router)
 app.include_router(auth_routes.router)
 
 
