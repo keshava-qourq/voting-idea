@@ -29,6 +29,20 @@ export function getSessionToken(): string | null {
   }
 }
 
+// Screens that depend on being logged in re-render when the token is set or cleared.
+const sessionListeners = new Set<() => void>();
+
+function notifySessionChange(): void {
+  sessionListeners.forEach((listener) => listener());
+}
+
+export function subscribeSession(listener: () => void): () => void {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+}
+
 export function setSessionToken(token: string): void {
   if (typeof window === "undefined") return;
   try {
@@ -36,6 +50,7 @@ export function setSessionToken(token: string): void {
   } catch {
     // Storage unavailable (private mode, quota): the session just won't persist.
   }
+  notifySessionChange();
 }
 
 export function clearSessionToken(): void {
@@ -45,4 +60,5 @@ export function clearSessionToken(): void {
   } catch {
     // Nothing to clear if storage was never reachable.
   }
+  notifySessionChange();
 }

@@ -184,6 +184,160 @@
         ]
       }
     },
+    "/ideas": {
+      "get": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "List Ideas",
+        "description": "Public board, most votes first, ties newest first. Never shows author emails.",
+        "operationId": "list_ideas_ideas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/IdeaRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Ideas Ideas Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Post Idea",
+        "description": "Post an idea with zero votes. Logged-in users only.",
+        "operationId": "post_idea_ideas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdeaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IdeaRead"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/ideas/{idea_id}/vote": {
+      "post": {
+        "tags": [
+          "Ideas"
+        ],
+        "summary": "Vote",
+        "description": "Upvote an idea. A repeat vote by the same user changes nothing.",
+        "operationId": "vote_ideas__idea_id__vote_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "idea_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Idea Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoteResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "summary": "Health",
@@ -252,6 +406,63 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "IdeaCreate": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "default": ""
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "IdeaCreate",
+        "description": "The idea form: a title of at most 120 characters and a description of at most 500."
+      },
+      "IdeaRead": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "voteCount": {
+            "type": "integer",
+            "title": "Votecount"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          },
+          "voted": {
+            "type": "boolean",
+            "title": "Voted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "description",
+          "voteCount",
+          "createdAt",
+          "voted"
+        ],
+        "title": "IdeaRead",
+        "description": "One idea on the public board. It never carries the author's email."
       },
       "LoginRequest": {
         "properties": {
@@ -400,6 +611,30 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VoteResponse": {
+        "properties": {
+          "ideaId": {
+            "type": "string",
+            "title": "Ideaid"
+          },
+          "voteCount": {
+            "type": "integer",
+            "title": "Votecount"
+          },
+          "voted": {
+            "type": "boolean",
+            "title": "Voted"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ideaId",
+          "voteCount",
+          "voted"
+        ],
+        "title": "VoteResponse",
+        "description": "The idea's vote count after the caller's upvote. Votes are permanent upvotes."
       }
     },
     "securitySchemes": {

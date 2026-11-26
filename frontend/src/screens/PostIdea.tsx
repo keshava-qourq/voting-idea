@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
 
+import { api } from "@/api/client";
 import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
@@ -37,13 +38,30 @@ function Ornament() {
 
 export default function Screen() {
   const navigate = useNavigate();
-  const [member, setMember] = React.useState(false);
+  // undefined while GET /auth/me is pending, false for a visitor, true when logged in.
+  const [member, setMember] = React.useState(undefined);
+  const [saving, setSaving] = React.useState(false);
   const [title, setTitle] = React.useState("");
   const [desc, setDesc] = React.useState("");
   const [errors, setErrors] = React.useState({});
   const [promptTried, setPromptTried] = React.useState(false);
   const [posted, setPosted] = React.useState(false);
   const promptRef = React.useRef(null);
+
+  React.useEffect(() => {
+    let current = true;
+    api
+      .GET("/auth/me")
+      .then(({ data }) => {
+        if (current) setMember(!!data);
+      })
+      .catch(() => {
+        if (current) setMember(false);
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
 
   React.useEffect(() => {
     if (!posted) return undefined;
@@ -60,34 +78,41 @@ export default function Screen() {
 
   function validate() {
     const e = {};
-    if (!title.trim()) e.title = "Add a title so colleagues know what the idea is.";
-    else if (tl > TITLE_MAX)
-      e.title =
-        "The title is " +
-        (tl - TITLE_MAX) +
-        " characters over the limit of " +
-        TITLE_MAX +
-        ". Shorten it to post.";
-    if (!desc.trim()) e.desc = "Add a short description so colleagues can judge the idea.";
-    else if (dl > DESC_MAX)
-      e.desc =
-        "The description is " +
-        (dl - DESC_MAX) +
-        " characters over the limit of " +
-        DESC_MAX +
-        ". Shorten it to post.";
+    if (!title.trim()) e.title = "Title is required";
+    else if (tl > TITLE_MAX) e.title = "Title must be " + TITLE_MAX + " characters or fewer";
+    if (!desc.trim()) e.desc = "Description is required";
+    else if (dl > DESC_MAX) e.desc = "Description must be " + DESC_MAX + " characters or fewer";
     return e;
   }
 
-  function onSubmit(ev) {
+  async function onSubmit(ev) {
     ev.preventDefault();
-    if (!member) {
+    if (saving || posted) return;
+    const e = validate();
+    setErrors(e);
+    if (Object.keys(e).length > 0) return;
+    if (member === false) {
       setPromptTried(true);
       return;
     }
-    const e = validate();
-    setErrors(e);
-    if (Object.keys(e).length === 0) setPosted(true);
+    setSaving(true);
+    try {
+      const { response } = await api.POST("/ideas", {
+        body: { title: title.trim(), description: desc.trim() },
+      });
+      if (response && response.status === 401) {
+        setMember(false);
+        setPromptTried(true);
+      } else if (response && response.status >= 200 && response.status < 300) {
+        setPosted(true);
+      } else {
+        setErrors({ form: "Something went wrong. Try again." });
+      }
+    } catch {
+      setErrors({ form: "Something went wrong. Try again." });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const ink = brand.primaryColor;
@@ -177,6 +202,7 @@ export default function Screen() {
             </p>
             <h1
               data-wf="b-0-0"
+              data-testid="post-an-idea-title"
               className="mt-3"
               style={{
                 fontFamily: brand.fontHeading,
@@ -194,7 +220,7 @@ export default function Screen() {
 
           <Ornament />
 
-          {!member && (
+          {member === false && (
             <section aria-label="Log in required" className="text-center mb-8">
               <p
                 data-wf="b-1-0"
@@ -209,7 +235,7 @@ export default function Screen() {
                   fontWeight: promptTried ? 700 : 400,
                 }}
               >
-                Log in or sign up to post an idea.
+                Log in or sign up to post an idea
               </p>
               {promptTried && (
                 <p
@@ -224,6 +250,7 @@ export default function Screen() {
                 <div data-wf="b-2-0">
                   <Button
                     type="button"
+                    data-testid="log-in-btn"
                     className="gp-btn gp-prim gp-focus"
                     style={primaryBtn}
                     onClick={() => navigate("log-in")}
@@ -234,6 +261,7 @@ export default function Screen() {
                 <div data-wf="b-2-1">
                   <Button
                     type="button"
+                    data-testid="sign-up-btn"
                     className="gp-btn gp-ghost gp-focus"
                     style={ghostBtn}
                     onClick={() => navigate("sign-up")}
@@ -246,7 +274,13 @@ export default function Screen() {
             </section>
           )}
 
-          <form data-wf="b-3-0" onSubmit={onSubmit} noValidate aria-labelledby="new-idea-heading">
+          <form
+            data-wf="b-3-0"
+            data-testid="new-idea-form"
+            onSubmit={onSubmit}
+            noValidate
+            aria-labelledby="new-idea-heading"
+          >
             <h2
               id="new-idea-heading"
               className="text-center"
@@ -261,9 +295,9 @@ export default function Screen() {
               New idea
             </h2>
             <p className="text-center mt-2" style={{ fontSize: 14, ...soft }}>
-              {member
-                ? "Your idea joins the board with zero votes. Ideas cannot be edited or deleted once posted."
-                : "You can draft here, but posting needs an account."}
+              {member === false
+                ? "You can draft here, but posting needs an account."
+                : "Your idea joins the board with zero votes."}
             </p>
 
             <div className="mt-8">
@@ -286,6 +320,7 @@ export default function Screen() {
               <Input
                 id="idea-title"
                 data-wf="i-3-0-0"
+                data-testid="title-max-80-characters-input"
                 className="gp-field mt-2"
                 style={fieldStyle(!!errors.title)}
                 value={title}
@@ -339,6 +374,7 @@ export default function Screen() {
               <Textarea
                 id="idea-desc"
                 data-wf="i-3-0-1"
+                data-testid="short-description-max-280-characte-input"
                 className="gp-field mt-2"
                 rows={5}
                 style={{ ...fieldStyle(!!errors.desc), resize: "vertical" }}
@@ -372,6 +408,16 @@ export default function Screen() {
               )}
             </div>
 
+            {errors.form && (
+              <p
+                role="alert"
+                className="mt-6 text-center"
+                style={{ color: errColor, fontWeight: 600 }}
+              >
+                {errors.form}
+              </p>
+            )}
+
             {posted && (
               <div
                 role="status"
@@ -394,7 +440,8 @@ export default function Screen() {
               <div data-wf="b-4-0">
                 <Button
                   type="submit"
-                  disabled={posted}
+                  data-testid="submit-idea-btn"
+                  disabled={posted || saving}
                   className="gp-btn gp-prim gp-focus"
                   style={primaryBtn}
                 >
@@ -404,6 +451,7 @@ export default function Screen() {
               <div data-wf="b-4-1" className="text-center">
                 <button
                   type="button"
+                  data-testid="cancel-link"
                   onClick={() => navigate("board")}
                   className="gp-focus inline-flex items-center justify-center gap-2"
                   style={{

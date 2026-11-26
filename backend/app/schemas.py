@@ -5,6 +5,8 @@ generated route returns until it has been implemented. Every model is an ApiMode
 so its JSON uses camelCase names (app/api_model.py).
 """
 
+from datetime import datetime
+
 from app.api_model import ApiModel
 
 
@@ -59,6 +61,35 @@ class LoginRequest(ApiModel):
     # Plain strings: a wrong or unknown pair gets the same generic 401, whatever its shape.
     email: str
     password: str
+
+
+class IdeaRead(ApiModel):
+    """One idea on the public board. It never carries the author's email."""
+
+    id: str
+    title: str
+    description: str
+    vote_count: int
+    created_at: datetime
+    # True when the signed-in caller has voted on this idea; always false without a valid token.
+    voted: bool
+
+
+class IdeaCreate(ApiModel):
+    """The idea form: a title of at most 120 characters and a description of at most 500."""
+
+    # Plain strings with defaults: the logic checks them and names the field to correct.
+    title: str = ""
+    description: str = ""
+
+
+class VoteResponse(ApiModel):
+    """The idea's vote count after the caller's upvote. Votes are permanent upvotes."""
+
+    idea_id: str
+    vote_count: int
+    # Always true: a successful call means the caller's upvote is recorded.
+    voted: bool
 
 
 class LogoutResponse(ApiModel):

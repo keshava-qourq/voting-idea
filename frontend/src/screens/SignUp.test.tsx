@@ -109,6 +109,27 @@ describe("SignUp", () => {
     expect(screen.getByTestId("sign-up-btn")).not.toBeDisabled();
   });
 
+  it("[AC-041] asks only for an email address and a password", () => {
+    renderScreen();
+    const form = screen.getByTestId("sign-up-form");
+    const fields = Array.from(form.querySelectorAll("input, select, textarea"));
+    expect(fields.map((f) => f.getAttribute("name"))).toEqual(["email", "password"]);
+    expect(fields.map((f) => f.getAttribute("type"))).toEqual(["email", "password"]);
+  });
+
+  it("[AC-041] sends only the email and the password", async () => {
+    const pwd = crypto.randomUUID();
+    post.mockResolvedValue({
+      data: { token: "t", user_id: "u4", email: "a@b.io" },
+      response: { status: 201 },
+    });
+    renderScreen();
+    fill("a@b.io", pwd);
+    await screen.findByText("board page");
+    const body = post.mock.calls[0][1].body;
+    expect(Object.keys(body).sort()).toEqual(["email", "password"]);
+  });
+
   it("[AC-001] the log-in link opens the log-in screen", () => {
     renderScreen();
     fireEvent.click(screen.getByTestId("already-have-an-account-log-in-link"));
