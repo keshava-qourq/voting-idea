@@ -253,7 +253,7 @@ export default function Screen() {
                     data-testid="log-in-btn"
                     className="gp-btn gp-prim gp-focus"
                     style={primaryBtn}
-                    onClick={() => navigate("log-in")}
+                    onClick={() => navigate("log-in", { from: "post-idea" })}
                   >
                     Log in
                   </Button>

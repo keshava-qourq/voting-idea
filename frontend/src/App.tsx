@@ -59,10 +59,8 @@ function AppShellLayout() {
     navigate("/board", { replace: true });
   };
 
-  // Posting needs a session: a logged-out or expired one is sent back to log in.
-  if (location.pathname === "/post-idea") {
-    if (user === null) return <Navigate to="/log-in" replace />;
-  }
+  // A visitor (or an expired session) is not redirected from the post form: the screen itself
+  // prompts to log in or sign up, and the server refuses the post anyway.
 
   return (
     <div className="flex min-h-screen flex-col">

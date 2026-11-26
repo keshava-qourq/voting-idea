@@ -1,6 +1,7 @@
 // @ts-nocheck -- generated from the approved design under its JS runtime contract; not hand-written TypeScript.
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
+import { useLocation } from "react-router-dom";
 
 import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
@@ -18,6 +19,9 @@ const GENERIC_ERROR = "Something went wrong. Try again.";
 
 export default function Screen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Where the visitor was headed when prompted to log in: the post form, else the board.
+  const returnTo = location.state && location.state.from === "post-idea" ? "post-idea" : "board";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [formError, setFormError] = React.useState("");
@@ -37,7 +41,7 @@ export default function Screen() {
       });
       if (data) {
         setSessionToken(data.token);
-        navigate("board");
+        navigate(returnTo);
         return;
       }
       const status = response && response.status;

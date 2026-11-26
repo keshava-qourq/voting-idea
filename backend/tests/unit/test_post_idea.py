@@ -138,6 +138,39 @@ def test_nfr004_posting_is_refused_with_an_unknown_token(
     assert _idea_count(db_session) == 0
 
 
+def test_ac025_a_visitor_who_posts_is_told_to_log_in_and_no_idea_is_created(
+    client: TestClient, db_session: Session
+) -> None:
+    response = client.post("/ideas", json={"title": "Title", "description": "Text"})
+
+    assert response.status_code == 401
+    assert response.headers["www-authenticate"] == "Bearer"
+    assert _idea_count(db_session) == 0
+    assert client.get("/ideas").json() == []
+
+
+def test_ac025_a_visitor_with_an_invalid_post_is_asked_to_log_in_first(
+    client: TestClient, db_session: Session
+) -> None:
+    response = client.post("/ideas", json={"title": "", "description": ""})
+
+    assert response.status_code == 401
+    assert _idea_count(db_session) == 0
+
+
+def test_ac025_the_profile_check_reports_a_visitor_as_not_logged_in(client: TestClient) -> None:
+    response = client.get("/auth/me")
+
+    assert response.status_code == 401
+
+
+def test_ac025_the_profile_check_reports_a_logged_in_user(auth_client: TestClient) -> None:
+    response = auth_client.get("/auth/me")
+
+    assert response.status_code == 200
+    assert response.json()["email"]
+
+
 def test_ac024_no_edit_or_delete_endpoint_is_offered(auth_client: TestClient) -> None:
     created = auth_client.post("/ideas", json={"title": "Title", "description": "Text"}).json()
 
