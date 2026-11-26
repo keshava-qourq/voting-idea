@@ -11,6 +11,10 @@ _No unit-test run yet._
 <!-- sdlc:auto:end unit -->
 
 <!-- sdlc:auto:start dev-checks -->
+### Sprint —
+
+_No test steps recorded._
+
 ### Sprint 3
 
 | Step | Status | Ticket | Finished |

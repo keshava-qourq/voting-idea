@@ -11,7 +11,7 @@ Features
 3. List ideas by votes, highest first. Anyone can view.
 4. Upvote an idea. One vote per user per idea.
 
-**Documentation version:** v7
+**Documentation version:** v8
 <!-- sdlc:auto:end overview -->
 
 ## Contents
@@ -36,7 +36,7 @@ Features
 | [Tests](testing/test-cases.md) | 0 tests |
 | [Deployment guide](deployment/deployment-guide.md) | deployed |
 | [Runbook](deployment/runbook.md) | deployed |
-| [Release notes](deployment/release-notes.md) | 4 releases |
+| [Release notes](deployment/release-notes.md) | 5 releases |
 | [Traceability matrix](traceability-matrix.md) | 16 requirements |
-| [Changelog](CHANGELOG.md) | 7 versions |
+| [Changelog](CHANGELOG.md) | 8 versions |
 <!-- sdlc:auto:end contents -->
