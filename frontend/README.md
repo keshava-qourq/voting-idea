@@ -3,6 +3,7 @@
 Build a small Idea Voting Board with sign up.
 
 Features
+
 1. Sign up with email and password. Log in and log out.
 2. Post an idea (title, short description). Logged-in users only.
 3. List ideas by votes, highest first. Anyone can view.

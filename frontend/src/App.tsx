@@ -1,5 +1,16 @@
-import { NavLink, Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { useEffect, useState } from "react";
+import {
+  NavLink,
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 
+import { api } from "@/api/client";
+import { clearSessionToken } from "@/lib/api";
 import { Icons } from "@/lib/icons";
 import Board from "@/screens/Board";
 import PostIdea from "@/screens/PostIdea";
@@ -14,6 +25,45 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 // The app's menu, drawn around every screen except the ones routed outside it below.
 function AppShellLayout() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  // undefined while GET /auth/me is pending, null when logged out or the session has expired.
+  const [user, setUser] = useState<{ email: string } | null | undefined>(undefined);
+
+  useEffect(() => {
+    let current = true;
+    api
+      .GET("/auth/me")
+      .then(({ data, response }) => {
+        if (response && response.status === 401) clearSessionToken();
+        if (current) setUser(data ?? null);
+      })
+      .catch(() => {
+        if (current) setUser(null);
+      });
+    return () => {
+      current = false;
+    };
+  }, [location.pathname]);
+
+  // Ends the session on the server first (it needs the token), then drops the local one
+  // whatever the answer, and shows the board as a visitor.
+  const logOut = async () => {
+    try {
+      await api.POST("/auth/logout");
+    } catch {
+      // The server is unreachable: the local session is still dropped below.
+    }
+    clearSessionToken();
+    setUser(null);
+    navigate("/board", { replace: true });
+  };
+
+  // Posting needs a session: a logged-out or expired one is sent back to log in.
+  if (location.pathname === "/post-idea") {
+    if (user === null) return <Navigate to="/log-in" replace />;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header
@@ -39,14 +89,26 @@ function AppShellLayout() {
               <Icons.Plus size={16} />
               {"Post an Idea"}
             </NavLink>
-            <NavLink to="/log-in" className={navLinkClass}>
-              <Icons.User size={16} />
-              {"Log In"}
-            </NavLink>
-            <NavLink to="/sign-up" className={navLinkClass}>
-              {"Sign Up"}
-            </NavLink>
+            {user ? null : (
+              <>
+                <NavLink to="/log-in" className={navLinkClass}>
+                  <Icons.User size={16} />
+                  {"Log In"}
+                </NavLink>
+                <NavLink to="/sign-up" className={navLinkClass}>
+                  {"Sign Up"}
+                </NavLink>
+              </>
+            )}
           </nav>
+          {user ? (
+            <div className="ml-auto flex items-center gap-3 text-sm">
+              <span>{`Logged in as ${user.email}`}</span>
+              <button type="button" className="underline" onClick={logOut}>
+                {"Log out"}
+              </button>
+            </div>
+          ) : null}
         </div>
       </header>
       <main className="flex-1 overflow-auto">
