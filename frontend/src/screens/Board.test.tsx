@@ -118,6 +118,40 @@ describe("Board ranked list", () => {
     expect(screen.queryByTestId("no-ideas-yet-post-the-first-idea-empty")).toBeNull();
   });
 
+  it("[AC-017] keeps tied ideas in the API order, newest first, and does not re-sort them", async () => {
+    const newest = { ...idea("Zulu", 3), createdAt: "2026-11-03T09:00:00Z" };
+    const middle = { ...idea("Mike", 3), createdAt: "2026-11-02T09:00:00Z" };
+    const oldest = { ...idea("Alpha", 3), createdAt: "2026-11-01T09:00:00Z" };
+    mockGet([idea("Top", 8), newest, middle, oldest, idea("Low", 1)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const titles = Array.from(list.querySelectorAll("h3")).map((h) => h.textContent);
+    expect(titles).toEqual(["Top", "Zulu", "Mike", "Alpha", "Low"]);
+  });
+
+  it("[AC-018] lists the newer idea above the older one after it gains a vote and the board is reloaded", async () => {
+    const older = { ...idea("Older", 2), createdAt: "2026-11-01T09:00:00Z" };
+    const newer = { ...idea("Newer", 2), createdAt: "2026-11-02T09:00:00Z" };
+    mockGet([newer, older]);
+    const first = renderAt("/board");
+    let list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(Array.from(list.querySelectorAll("h3")).map((h) => h.textContent)).toEqual([
+      "Newer",
+      "Older",
+    ]);
+    first.unmount();
+
+    mockGet([{ ...newer, voteCount: 3 }, older]);
+    renderAt("/board");
+    list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(Array.from(list.querySelectorAll("h3")).map((h) => h.textContent)).toEqual([
+      "Newer",
+      "Older",
+    ]);
+    expect(list.querySelectorAll("li")[0].textContent).toContain("3 votes");
+  });
+
   it("[AC-015] shows each idea with its current vote count", async () => {
     mockGet([idea("Alpha", 5), idea("Beta", 1)]);
     renderAt("/board");
