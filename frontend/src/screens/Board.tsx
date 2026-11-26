@@ -31,6 +31,7 @@ export default function Screen() {
   }, []);
   const loggedIn = React.useSyncExternalStore(subscribeSession, getSessionToken) !== null;
   const [voting, setVoting] = React.useState(null);
+  const inFlight = React.useRef(new Set());
   const [voteFailed, setVoteFailed] = React.useState(false);
 
   // Votes are permanent upvotes: the only action is to add one. The list is re-ranked
@@ -40,6 +41,9 @@ export default function Screen() {
       navigate("log-in");
       return;
     }
+    // A repeated click while this idea's vote request is in flight is ignored.
+    if (inFlight.current.has(idea.id) || idea.voted) return;
+    inFlight.current.add(idea.id);
     setVoting(idea.id);
     setVoteFailed(false);
     try {
@@ -68,6 +72,7 @@ export default function Screen() {
     } catch {
       setVoteFailed(true);
     } finally {
+      inFlight.current.delete(idea.id);
       setVoting(null);
     }
   };

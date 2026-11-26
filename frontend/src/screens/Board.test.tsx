@@ -214,6 +214,79 @@ describe("Board upvote", () => {
   });
 });
 
+describe("Board one vote per idea", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-030] shows that I have voted and replaces the vote control on that idea", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 5, true), idea("Beta", 1)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const items = list.querySelectorAll("li");
+    expect(items[0]).toHaveTextContent("You have voted");
+    expect(items[0].querySelector("button")).toBeNull();
+    expect(items[1]).not.toHaveTextContent("You have voted");
+    expect(items[1].querySelector("button")).not.toBeNull();
+  });
+
+  it("[AC-031] sends one request when the vote control is double-clicked", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    let resolve: (value: unknown) => void = () => {};
+    post.mockReturnValue(new Promise((r) => (resolve = r)));
+    renderAt("/board");
+
+    const button = await screen.findByRole("button", { name: "Vote for Beta" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+
+    resolve({ data: { ideaId: "id-Beta", voteCount: 3, voted: true }, response: { status: 200 } });
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("3 votes");
+  });
+
+  it("[AC-031] keeps the count when the server answers a repeat vote with the same count", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Beta", voteCount: 2, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("2 votes");
+  });
+
+  it("[AC-032] accepts a vote on a different idea after voting on one", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 5, true), idea("Beta", 1)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Beta", voteCount: 2, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    await waitFor(() => expect(screen.getAllByText("You have voted")).toHaveLength(2));
+    expect(post).toHaveBeenCalledWith("/ideas/{idea_id}/vote", {
+      params: { path: { idea_id: "id-Beta" } },
+    });
+    expect(screen.queryByRole("button", { name: /Vote for/ })).toBeNull();
+  });
+});
+
 describe("Board ranked list", () => {
   beforeEach(() => {
     get.mockReset();

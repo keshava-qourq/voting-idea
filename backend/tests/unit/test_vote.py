@@ -1,9 +1,12 @@
 """Upvoting an idea (US-010), one test per criterion."""
 
 import secrets
+from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import Any
 from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -30,6 +33,20 @@ def _foreign_idea(db_session: Session, title: str = "idea") -> Idea:
     db_session.add(idea)
     db_session.commit()
     return idea
+
+
+def _first_call_finds_nothing(real: Callable[..., Any]) -> Callable[..., Any]:
+    """Wrap `session.scalar` so the first query on votes (the "already voted?" check) is empty."""
+    calls = {"n": 0}
+
+    def scalar(statement: Any, *args: Any, **kwargs: Any) -> Any:
+        if "FROM votes" in str(statement):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                return None
+        return real(statement, *args, **kwargs)
+
+    return scalar
 
 
 def _votes_in_store(db_session: Session, idea_id: str) -> int:
@@ -74,6 +91,50 @@ def test_ac027_a_repeat_vote_changes_nothing(auth_client: TestClient, db_session
     assert again.status_code == 200
     assert again.json()["voteCount"] == 1
     assert _votes_in_store(db_session, idea.id) == 1
+
+
+def test_ac031_a_double_click_stores_one_vote_and_keeps_the_count(
+    auth_client: TestClient, db_session: Session
+) -> None:
+    idea = _foreign_idea(db_session)
+
+    responses = [auth_client.post(f"/ideas/{idea.id}/vote") for _ in range(3)]
+
+    assert [r.status_code for r in responses] == [200, 200, 200]
+    assert [r.json()["voteCount"] for r in responses] == [1, 1, 1]
+    assert _votes_in_store(db_session, idea.id) == 1
+    board = auth_client.get("/ideas").json()
+    assert [(i["id"], i["voteCount"]) for i in board] == [(idea.id, 1)]
+
+
+def test_ac031_the_data_refuses_a_duplicate_vote_when_two_requests_race(
+    auth_client: TestClient, db_session: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    idea = _foreign_idea(db_session)
+    assert auth_client.post(f"/ideas/{idea.id}/vote").status_code == 200
+    # Both requests passed the "already voted?" check before either stored its vote.
+    monkeypatch.setattr(db_session, "scalar", _first_call_finds_nothing(db_session.scalar))
+
+    response = auth_client.post(f"/ideas/{idea.id}/vote")
+
+    assert response.status_code == 200
+    assert response.json() == {"ideaId": idea.id, "voteCount": 1, "voted": True}
+    assert _votes_in_store(db_session, idea.id) == 1
+
+
+def test_ac032_a_vote_on_a_different_idea_is_accepted(
+    auth_client: TestClient, db_session: Session
+) -> None:
+    first = _foreign_idea(db_session, "first")
+    second = _foreign_idea(db_session, "second")
+    assert auth_client.post(f"/ideas/{first.id}/vote").status_code == 200
+
+    response = auth_client.post(f"/ideas/{second.id}/vote")
+
+    assert response.status_code == 200
+    assert response.json() == {"ideaId": second.id, "voteCount": 1, "voted": True}
+    assert _votes_in_store(db_session, first.id) == 1
+    assert _votes_in_store(db_session, second.id) == 1
 
 
 def test_ac027_different_users_each_add_one(auth_client: TestClient, db_session: Session) -> None:
