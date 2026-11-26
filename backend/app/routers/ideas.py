@@ -12,11 +12,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import errors
-from app.api_model import ApiModel
 from app.auth import bearer, current_user, user_of_token
 from app.database import get_db
 from app.models import Idea, User, Vote
-from app.schemas import ErrorResponse, IdeaCreate, IdeaRead
+from app.schemas import ErrorResponse, IdeaCreate, IdeaRead, VoteResponse
 
 router = APIRouter(prefix="/ideas", tags=["Ideas"])
 
@@ -28,12 +27,6 @@ TITLE_TOO_LONG = errors.TITLE_TOO_LONG
 DESCRIPTION_REQUIRED = errors.DESCRIPTION_REQUIRED
 DESCRIPTION_TOO_LONG = errors.DESCRIPTION_TOO_LONG
 IDEA_NOT_FOUND = errors.IDEA_NOT_FOUND
-
-
-class VoteResponse(ApiModel):
-    idea_id: str
-    vote_count: int
-    voted: bool
 
 
 def _error(error: errors.ApiError, field: str | None = None) -> JSONResponse:
@@ -119,7 +112,7 @@ def post_idea(
 @router.post(
     "/{idea_id}/vote",
     response_model=VoteResponse,
-    responses={404: {"model": ErrorResponse}},
+    responses={401: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 def vote(
     idea_id: str,

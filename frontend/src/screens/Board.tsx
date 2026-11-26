@@ -3,6 +3,7 @@
 import React from "react";
 
 import { api } from "@/api/client";
+import { clearSessionToken, getSessionToken, subscribeSession } from "@/lib/api";
 import { Icons } from "@/lib/icons";
 import { brand } from "@/lib/brand";
 import { useNavigate } from "@/lib/navigate";
@@ -28,6 +29,48 @@ export default function Screen() {
       current = false;
     };
   }, []);
+  const loggedIn = React.useSyncExternalStore(subscribeSession, getSessionToken) !== null;
+  const [voting, setVoting] = React.useState(null);
+  const [voteFailed, setVoteFailed] = React.useState(false);
+
+  // Votes are permanent upvotes: the only action is to add one. The list is re-ranked
+  // like the server ranks it: most votes first, ties newest first.
+  const upvote = async (idea) => {
+    if (!loggedIn) {
+      navigate("log-in");
+      return;
+    }
+    setVoting(idea.id);
+    setVoteFailed(false);
+    try {
+      const { data, response } = await api.POST("/ideas/{idea_id}/vote", {
+        params: { path: { idea_id: idea.id } },
+      });
+      if (response && response.status === 401) {
+        clearSessionToken();
+      } else if (data) {
+        setIdeas((current) =>
+          (current ?? [])
+            .map((item) =>
+              item.id === data.ideaId
+                ? { ...item, voteCount: data.voteCount, voted: data.voted }
+                : item,
+            )
+            .sort(
+              (a, b) =>
+                b.voteCount - a.voteCount ||
+                (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0),
+            ),
+        );
+      } else {
+        setVoteFailed(true);
+      }
+    } catch {
+      setVoteFailed(true);
+    } finally {
+      setVoting(null);
+    }
+  };
   const frame = {
     border: `1px solid ${brand.accentColor}`,
     outline: `1px solid ${brand.primaryColor}`,
@@ -66,6 +109,7 @@ export default function Screen() {
         {rule}
       </header>
 
+      {loggedIn ? null : (
       <section
         data-wf="b-1-0"
         data-testid="log-in-or-sign-up-to-vote-modal"
@@ -116,6 +160,7 @@ export default function Screen() {
           </button>
         </div>
       </section>
+      )}
 
       <section data-wf="b-2-0" aria-labelledby="ranked-heading" className="space-y-4">
         <h2 id="ranked-heading" className="text-center text-sm" style={caps}>
@@ -129,6 +174,11 @@ export default function Screen() {
         {ideas === null ? (
           <p role="alert" className="text-center text-sm">
             Could not load the ideas.
+          </p>
+        ) : null}
+        {voteFailed ? (
+          <p role="alert" className="text-center text-sm">
+            Could not record your vote.
           </p>
         ) : null}
         {ideas && ideas.length > 0 ? (
@@ -171,8 +221,11 @@ export default function Screen() {
                   <button
                     type="button"
                     data-wf={idea.id}
-                    onClick={() => navigate("log-in")}
-                    aria-label={`Vote for ${idea.title} — log in first`}
+                    onClick={() => upvote(idea)}
+                    disabled={voting === idea.id}
+                    aria-label={
+                      loggedIn ? `Vote for ${idea.title}` : `Vote for ${idea.title} — log in first`
+                    }
                     className={`deco-btn flex h-11 w-11 items-center justify-center ${focusCls}`}
                     style={{
                       backgroundColor: brand.primaryColor,

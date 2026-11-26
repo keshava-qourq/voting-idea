@@ -83,6 +83,15 @@ class IdeaCreate(ApiModel):
     description: str = ""
 
 
+class VoteResponse(ApiModel):
+    """The idea's vote count after the caller's upvote. Votes are permanent upvotes."""
+
+    idea_id: str
+    vote_count: int
+    # Always true: a successful call means the caller's upvote is recorded.
+    voted: bool
+
+
 class LogoutResponse(ApiModel):
     """Confirms the session token no longer works."""
 

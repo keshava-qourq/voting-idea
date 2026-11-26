@@ -305,6 +305,16 @@
               }
             }
           },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
           "404": {
             "content": {
               "application/json": {
@@ -623,7 +633,8 @@
           "voteCount",
           "voted"
         ],
-        "title": "VoteResponse"
+        "title": "VoteResponse",
+        "description": "The idea's vote count after the caller's upvote. Votes are permanent upvotes."
       }
     },
     "securitySchemes": {

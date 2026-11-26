@@ -267,7 +267,10 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /** VoteResponse */
+        /**
+         * VoteResponse
+         * @description The idea's vote count after the caller's upvote. Votes are permanent upvotes.
+         */
         VoteResponse: {
             /** Ideaid */
             ideaId: string;
@@ -507,6 +510,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VoteResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not Found */

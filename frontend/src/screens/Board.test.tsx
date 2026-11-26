@@ -97,9 +97,122 @@ function mockGet(ideas: ReturnType<typeof idea>[] | "fail") {
         ? Promise.reject(new Error("network"))
         : Promise.resolve({ data: ideas, response: { status: 200 } });
     }
+    if (path === "/auth/me" && getSessionToken()) {
+      return Promise.resolve({
+        data: { id: "u1", email: "a@b.io", role: "user" },
+        response: { status: 200 },
+      });
+    }
     return Promise.resolve({ error: { detail: "Sign in first" }, response: { status: 401 } });
   });
 }
+
+describe("Board upvote", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  function loginAndVote(voteCount: number) {
+    post.mockResolvedValue({
+      data: { ideaId: "id-Beta", voteCount, voted: true },
+      response: { status: 200 },
+    });
+  }
+
+  it("[AC-027] adds exactly one vote, shows 'You have voted' and re-ranks the board", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 3), idea("Beta", 3)]);
+    loginAndVote(4);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledWith("/ideas/{idea_id}/vote", {
+      params: { path: { idea_id: "id-Beta" } },
+    });
+    const list = screen.getByTestId("ideas-ranked-by-votes-list");
+    expect(Array.from(list.querySelectorAll("h3")).map((h) => h.textContent)).toEqual([
+      "Beta",
+      "Alpha",
+    ]);
+    expect(list.querySelectorAll("li")[0].textContent).toContain("4 votes");
+    expect(list.querySelectorAll("li")[1].textContent).toContain("3 votes");
+  });
+
+  it("[AC-027] hides the log in or sign up modal from a logged-in user", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 3)]);
+    renderAt("/board");
+
+    await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(screen.queryByTestId("log-in-or-sign-up-to-vote-modal")).toBeNull();
+  });
+
+  it("[AC-027] a visitor sees the log in or sign up modal and no vote is sent", async () => {
+    mockGet([idea("Alpha", 3)]);
+    renderAt("/board");
+
+    expect(await screen.findByTestId("log-in-or-sign-up-to-vote-modal")).toHaveTextContent(
+      "Log in or sign up to vote",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Vote for Alpha/ }));
+    expect(post).not.toHaveBeenCalled();
+  });
+
+  it("[AC-028] accepts a vote on an idea I posted myself and counts it", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 0)]);
+    loginAndVote(1);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("1 vote");
+  });
+
+  it("[AC-029] offers no way to remove the vote or downvote once I have voted", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    loginAndVote(3);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+    await screen.findByText("You have voted");
+
+    const item = screen.getByTestId("ideas-ranked-by-votes-list").querySelector("li")!;
+    expect(item.querySelector("button")).toBeNull();
+    expect(screen.queryByRole("button", { name: /vote|remove|undo|down/i })).toBeNull();
+  });
+
+  it("[AC-027] shows an error and keeps the count when the vote fails", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    post.mockRejectedValue(new Error("network"));
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Could not record your vote.");
+    expect(screen.queryByText("You have voted")).toBeNull();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("2 votes");
+  });
+
+  it("[AC-027] an expired session shows the log in or sign up modal again", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    post.mockResolvedValue({ error: { detail: "Sign in first" }, response: { status: 401 } });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByTestId("log-in-or-sign-up-to-vote-modal")).toBeInTheDocument();
+    expect(getSessionToken()).toBeNull();
+  });
+});
 
 describe("Board ranked list", () => {
   beforeEach(() => {
