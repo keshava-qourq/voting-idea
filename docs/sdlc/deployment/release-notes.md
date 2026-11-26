@@ -3,6 +3,18 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start releases -->
+## 7bb79805b346 — 2026-11-26
+
+**Commit:** `7bb7980`
+
+**Delivered:**
+- US-005: View ideas ranked by votes without logging in
+- US-006: Order tied ideas newest first
+- US-007: See the vote count on every idea
+- US-008: Post an idea
+- US-010: Upvote an idea
+- US-015: Keep personal data minimal
+
 ## 7b595a468c04 — 2026-11-26
 
 **Commit:** `7b595a4`

@@ -11,9 +11,20 @@ _No unit-test run yet._
 <!-- sdlc:auto:end unit -->
 
 <!-- sdlc:auto:start dev-checks -->
-### Sprint 2
+### Sprint 3
 
 _No test steps recorded._
+
+### Sprint 2
+
+| Step | Status | Ticket | Finished |
+|---|---|---|---|
+| write_tests | succeeded | US-005 | 2026-11-26 |
+| write_tests | succeeded | US-006 | 2026-11-26 |
+| write_tests | succeeded | US-007 | 2026-11-26 |
+| write_tests | succeeded | US-008 | 2026-11-26 |
+| write_tests | skipped | US-010 | 2026-11-26 |
+| write_tests | succeeded | US-015 | 2026-11-26 |
 
 ### Sprint 1
 
