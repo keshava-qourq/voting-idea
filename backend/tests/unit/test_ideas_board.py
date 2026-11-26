@@ -54,6 +54,34 @@ def test_ac019_each_idea_shows_its_title_description_and_vote_count(
     assert item["voteCount"] == 2
 
 
+def test_ac030_the_board_marks_only_the_ideas_the_caller_voted_on(
+    auth_client: TestClient, db_session: Session
+) -> None:
+    author = _user(db_session)
+    voted = _idea(db_session, author, "Voted", "I voted on this")
+    other = _idea(db_session, author, "Other", "I did not vote on this")
+    assert auth_client.post(f"/ideas/{voted.id}/vote").status_code == 200
+
+    items = {i["id"]: i["voted"] for i in auth_client.get("/ideas").json()}
+
+    assert items == {voted.id: True, other.id: False}
+
+
+def test_ac030_another_user_or_a_visitor_does_not_see_the_idea_as_voted(
+    client: TestClient, db_session: Session
+) -> None:
+    author = _user(db_session)
+    idea = _idea(db_session, author, "Voted", "Author voted")
+    db_session.add(Vote(id=str(uuid4()), user_id=author.id, idea_id=idea.id, created_at=NOW))
+    db_session.commit()
+
+    visitor = client.get("/ideas").json()
+    bad_token = client.get("/ideas", headers={"Authorization": "Bearer not-a-token"}).json()
+
+    assert [i["voted"] for i in visitor] == [False]
+    assert [i["voted"] for i in bad_token] == [False]
+
+
 def test_ac019_an_idea_with_no_votes_shows_a_count_of_zero(
     client: TestClient, db_session: Session
 ) -> None:

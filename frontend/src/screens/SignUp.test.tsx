@@ -136,3 +136,30 @@ describe("SignUp", () => {
     expect(screen.getByText("log in page")).toBeInTheDocument();
   });
 });
+
+describe("SignUp responsive layout", () => {
+  beforeEach(() => {
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-035] the card shrinks to a phone and the fields and button are tap sized", () => {
+    const { container } = renderScreen();
+
+    expect(container.querySelector('[data-layout="auth-card"]')!.className).toContain("px-5");
+    expect(screen.getByTestId("email-input").className).toContain("h-11");
+    expect(screen.getByTestId("password-input").className).toContain("h-11");
+    expect(screen.getByTestId("sign-up-btn").className).toContain("h-11");
+    expect(screen.getByTestId("sign-up-btn")).toHaveStyle({ minHeight: "52px" });
+  });
+
+  it("[AC-037] a sign up still completes with the form's submit button", async () => {
+    post.mockResolvedValue({
+      data: { token: "t-" + crypto.randomUUID(), user_id: "u1", email: "a@b.io" },
+      response: { status: 201 },
+    });
+    renderScreen();
+    fill("a@b.io", crypto.randomUUID());
+    expect(await screen.findByText("board page")).toBeInTheDocument();
+  });
+});

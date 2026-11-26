@@ -39,9 +39,6 @@ describe("Board log out", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: "Log out" })).toBeNull());
     expect(getSessionToken()).toBeNull();
     expect(screen.getByTestId("ideas-board-title")).toBeInTheDocument();
-    expect(screen.getByTestId("log-in-or-sign-up-to-vote-modal")).toBeInTheDocument();
-    expect(screen.getByTestId("log-in-link")).toBeInTheDocument();
-    expect(screen.getByTestId("sign-up-link")).toBeInTheDocument();
     expect(screen.queryByText(/Logged in as/)).toBeNull();
   });
 
@@ -68,13 +65,24 @@ describe("Board log out", () => {
     expect(screen.queryByTestId("ideas-board-title")).toBeNull();
   });
 
-  it("[AC-013] a visitor who tries to vote is sent to log in", async () => {
+  it("[AC-033] a visitor who tries to vote is prompted to log in and can go to the log in screen", async () => {
     mockGet([idea("Dark mode", 3)]);
     renderAt("/board");
 
     fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+    fireEvent.click(await screen.findByTestId("log-in-link"));
 
     expect(await screen.findByTestId("log-in-btn")).toBeInTheDocument();
+  });
+
+  it("[AC-033] a visitor can go to the sign up screen from the prompt", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+    fireEvent.click(await screen.findByTestId("sign-up-link"));
+
+    expect(screen.queryByTestId("ideas-board-title")).toBeNull();
   });
 });
 
@@ -151,15 +159,30 @@ describe("Board upvote", () => {
     expect(screen.queryByTestId("log-in-or-sign-up-to-vote-modal")).toBeNull();
   });
 
-  it("[AC-027] a visitor sees the log in or sign up modal and no vote is sent", async () => {
+  it("[AC-034] a visitor sees vote counts and vote controls before any prompt", async () => {
     mockGet([idea("Alpha", 3)]);
     renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(list).toHaveTextContent("3 votes");
+    expect(screen.getByRole("button", { name: /Vote for Alpha/ })).toBeEnabled();
+    expect(screen.queryByTestId("log-in-or-sign-up-to-vote-modal")).toBeNull();
+  });
+
+  it("[AC-033] a visitor's vote attempt shows the prompt, sends no vote and keeps the count", async () => {
+    mockGet([idea("Alpha", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Alpha/ }));
 
     expect(await screen.findByTestId("log-in-or-sign-up-to-vote-modal")).toHaveTextContent(
       "Log in or sign up to vote",
     );
-    fireEvent.click(screen.getByRole("button", { name: /Vote for Alpha/ }));
+    expect(screen.getByTestId("log-in-link")).toBeInTheDocument();
+    expect(screen.getByTestId("sign-up-link")).toBeInTheDocument();
     expect(post).not.toHaveBeenCalled();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list")).toHaveTextContent("3 votes");
+    expect(screen.queryByText("You have voted")).toBeNull();
   });
 
   it("[AC-028] accepts a vote on an idea I posted myself and counts it", async () => {
@@ -211,6 +234,79 @@ describe("Board upvote", () => {
 
     expect(await screen.findByTestId("log-in-or-sign-up-to-vote-modal")).toBeInTheDocument();
     expect(getSessionToken()).toBeNull();
+  });
+});
+
+describe("Board one vote per idea", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-030] shows that I have voted and replaces the vote control on that idea", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 5, true), idea("Beta", 1)]);
+    renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    const items = list.querySelectorAll("li");
+    expect(items[0]).toHaveTextContent("You have voted");
+    expect(items[0].querySelector("button")).toBeNull();
+    expect(items[1]).not.toHaveTextContent("You have voted");
+    expect(items[1].querySelector("button")).not.toBeNull();
+  });
+
+  it("[AC-031] sends one request when the vote control is double-clicked", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    let resolve: (value: unknown) => void = () => {};
+    post.mockReturnValue(new Promise((r) => (resolve = r)));
+    renderAt("/board");
+
+    const button = await screen.findByRole("button", { name: "Vote for Beta" });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(button).toBeDisabled();
+
+    resolve({ data: { ideaId: "id-Beta", voteCount: 3, voted: true }, response: { status: 200 } });
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("3 votes");
+  });
+
+  it("[AC-031] keeps the count when the server answers a repeat vote with the same count", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Beta", 2)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Beta", voteCount: 2, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
+    expect(screen.getByTestId("ideas-ranked-by-votes-list").textContent).toContain("2 votes");
+  });
+
+  it("[AC-032] accepts a vote on a different idea after voting on one", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Alpha", 5, true), idea("Beta", 1)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Beta", voteCount: 2, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Beta" }));
+
+    await waitFor(() => expect(screen.getAllByText("You have voted")).toHaveLength(2));
+    expect(post).toHaveBeenCalledWith("/ideas/{idea_id}/vote", {
+      params: { path: { idea_id: "id-Beta" } },
+    });
+    expect(screen.queryByRole("button", { name: /Vote for/ })).toBeNull();
   });
 });
 
@@ -371,5 +467,62 @@ describe("Board personal data", () => {
     expect(list.textContent).not.toMatch(/@/);
     expect(document.body.textContent).not.toContain("alice@example.com");
     expect(document.body.textContent).not.toContain("bob@example.org");
+  });
+});
+
+describe("Board responsive layout", () => {
+  beforeEach(() => {
+    get.mockReset();
+    post.mockReset();
+    window.localStorage.clear();
+  });
+
+  it("[AC-035] the board and its vote buttons fit a phone and are tap sized", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    const { container } = renderAt("/board");
+
+    const vote = await screen.findByRole("button", { name: /Vote for Dark mode/ });
+    expect(vote.className).toContain("h-11");
+    expect(vote.className).toContain("w-11");
+    const board = container.querySelector('[data-layout="board"]')!;
+    expect(board.className).toContain("w-full");
+    expect(board.className).toContain("min-w-0");
+    const item = screen.getByTestId("ideas-ranked-by-votes-list").querySelector("li")!;
+    expect(item.className).toContain("flex-col");
+  });
+
+  it("[AC-036] on desktop the ideas sit in a readable centred column", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    const { container } = renderAt("/board");
+
+    const list = await screen.findByTestId("ideas-ranked-by-votes-list");
+    expect(list.className).toContain("max-w-3xl");
+    expect(list.className).toContain("mx-auto");
+    expect(list.querySelector("li")!.className).toContain("sm:flex-row");
+    expect(container.querySelector('[data-layout="board"]')!.className).toContain("max-w-5xl");
+  });
+
+  it("[AC-035] the log in or sign up prompt buttons are tap sized", async () => {
+    mockGet([idea("Dark mode", 3)]);
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: /Vote for Dark mode/ }));
+
+    expect(await screen.findByTestId("log-in-link")).toHaveClass("h-11");
+    expect(screen.getByTestId("sign-up-link")).toHaveClass("h-11");
+  });
+
+  it("[AC-037] voting works: a logged in member votes and sees 'You have voted'", async () => {
+    setSessionToken("t-" + crypto.randomUUID());
+    mockGet([idea("Dark mode", 3)]);
+    post.mockResolvedValue({
+      data: { ideaId: "id-Dark mode", voteCount: 4, voted: true },
+      response: { status: 200 },
+    });
+    renderAt("/board");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Vote for Dark mode" }));
+
+    expect(await screen.findByText("You have voted")).toBeInTheDocument();
   });
 });

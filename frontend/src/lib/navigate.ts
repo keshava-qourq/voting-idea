@@ -26,7 +26,9 @@ export function toPath(route: string): string {
   );
 }
 
-export function useNavigate(): (route: string) => void {
+/** `state` rides along with the navigation, e.g. `{ from: "post-idea" }` to come back after login. */
+export function useNavigate(): (route: string, state?: unknown) => void {
   const navigate = useRouterNavigate();
-  return (route: string) => navigate(toPath(route));
+  return (route: string, state?: unknown) =>
+    navigate(toPath(route), state === undefined ? undefined : { state });
 }

@@ -85,11 +85,46 @@ describe("Log In", () => {
     expect(screen.getByTestId("log-in-btn")).not.toBeDisabled();
   });
 
-  it("[AC-010] sends me back to log in when the session has expired", async () => {
+  it("[AC-010] drops the expired session and prompts me to log in on the post form", async () => {
     window.localStorage.setItem("session_token", "t-" + crypto.randomUUID());
     renderAt("/post-idea");
-    expect(await screen.findByTestId("log-in-form")).toBeInTheDocument();
+    expect(await screen.findByText("Log in or sign up to post an idea")).toBeInTheDocument();
     await waitFor(() => expect(window.localStorage.getItem("session_token")).toBeNull());
+  });
+
+  it("[AC-026] after prompting on the post form, login brings me back to the post form", async () => {
+    post.mockResolvedValue({
+      data: {
+        token: "t-" + crypto.randomUUID(),
+        user: { id: "u1", email: "a@b.io", role: "user" },
+      },
+      response: { status: 200 },
+    });
+    renderAt("/post-idea");
+    await screen.findByText("Log in or sign up to post an idea");
+    fireEvent.click(screen.getByTestId("log-in-btn"));
+    expect(await screen.findByTestId("log-in-form")).toBeInTheDocument();
+    get.mockResolvedValue({
+      data: { id: "u1", email: "a@b.io", role: "user" },
+      response: { status: 200 },
+    });
+    fill("a@b.io", crypto.randomUUID());
+    expect(await screen.findByTestId("new-idea-form")).toBeInTheDocument();
+    expect(screen.queryByText("Log in or sign up to post an idea")).not.toBeInTheDocument();
+  });
+
+  it("[AC-026] a plain login takes me to the board", async () => {
+    post.mockResolvedValue({
+      data: {
+        token: "t-" + crypto.randomUUID(),
+        user: { id: "u1", email: "a@b.io", role: "user" },
+      },
+      response: { status: 200 },
+    });
+    renderAt("/log-in");
+    fill("a@b.io", crypto.randomUUID());
+    expect(await screen.findByText("Ideas Board", { selector: "a" })).toBeInTheDocument();
+    expect(screen.queryByTestId("log-in-form")).not.toBeInTheDocument();
   });
 
   it("[AC-011] offers no password reset option", () => {
@@ -102,5 +137,37 @@ describe("Log In", () => {
     renderAt("/log-in");
     fireEvent.click(screen.getByTestId("new-here-sign-up-link"));
     expect(screen.getByTestId("create-your-account-title")).toBeInTheDocument();
+  });
+});
+
+describe("Log In responsive layout", () => {
+  beforeEach(() => {
+    post.mockReset();
+    get.mockReset();
+    get.mockResolvedValue({ error: { detail: "Sign in first" }, response: { status: 401 } });
+    window.localStorage.clear();
+  });
+
+  it("[AC-035] the card shrinks to a phone and the fields and button are tap sized", () => {
+    const { container } = renderAt("/log-in");
+
+    expect(container.querySelector('[data-layout="auth-card"]')!.className).toContain("px-5");
+    expect(screen.getByTestId("email-input").className).toContain("h-11");
+    expect(screen.getByTestId("password-input").className).toContain("h-11");
+    expect(screen.getByTestId("log-in-btn")).toHaveStyle({ minHeight: "52px" });
+    expect(screen.getByTestId("new-here-sign-up-link")).toHaveStyle({ minHeight: "44px" });
+  });
+
+  it("[AC-037] a log in still completes and opens the board", async () => {
+    post.mockResolvedValue({
+      data: {
+        token: "t-" + crypto.randomUUID(),
+        user: { id: "u1", email: "a@b.io", role: "user" },
+      },
+      response: { status: 200 },
+    });
+    renderAt("/log-in");
+    fill("a@b.io", crypto.randomUUID());
+    expect(await screen.findByTestId("ideas-board-title")).toBeInTheDocument();
   });
 });

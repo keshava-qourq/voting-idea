@@ -99,7 +99,7 @@ describe("Post an Idea", () => {
     expect(screen.queryByText(/delete/i)).not.toBeInTheDocument();
   });
 
-  it("[AC-021] asks a visitor to log in or sign up and posts nothing", async () => {
+  it("[AC-025] asks a visitor to log in or sign up and posts nothing", async () => {
     get.mockResolvedValue({ error: { detail: "Sign in first" }, response: { status: 401 } });
     renderScreen();
     expect(await screen.findByText("Log in or sign up to post an idea")).toBeInTheDocument();
@@ -109,11 +109,56 @@ describe("Post an Idea", () => {
     expect(post).not.toHaveBeenCalled();
   });
 
-  it("[AC-021] asks me to log in when the server refuses the post", async () => {
+  it("[AC-025] shows no login prompt to a logged-in user", async () => {
+    renderScreen();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    expect(screen.queryByText("Log in or sign up to post an idea")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("log-in-btn")).not.toBeInTheDocument();
+  });
+
+  it("[AC-025] asks me to log in when the server refuses the post", async () => {
     post.mockResolvedValue({ error: { message: "x" }, response: { status: 401 } });
     renderScreen();
     await waitFor(() => expect(get).toHaveBeenCalled());
     submit("A title", "A description");
     expect(await screen.findByText("Log in or sign up to post an idea")).toBeInTheDocument();
+  });
+});
+
+describe("Post an Idea responsive layout", () => {
+  beforeEach(() => {
+    post.mockReset();
+    get.mockReset();
+    loggedIn();
+  });
+
+  it("[AC-035] the form fits a phone and its controls are tap sized", async () => {
+    const { container } = renderScreen();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+
+    expect(container.firstElementChild!.className).toContain("min-w-0");
+    expect(screen.getByTestId("title-max-80-characters-input").className).toContain("h-11");
+    expect(screen.getByTestId("submit-idea-btn").className).toContain("h-11");
+    expect(screen.getByTestId("submit-idea-btn")).toHaveStyle({ minHeight: "48px" });
+    expect(screen.getByTestId("cancel-link")).toHaveStyle({ minHeight: "48px" });
+  });
+
+  it("[AC-036] on desktop the form stays in a readable column", () => {
+    const { container } = renderScreen();
+
+    const card = container.querySelector('[data-layout="post-card"]')!;
+    expect(card).toHaveStyle({ maxWidth: "640px" });
+    expect(card.className).toContain("mx-auto");
+  });
+
+  it("[AC-037] posting still works", async () => {
+    post.mockResolvedValue({
+      data: { id: "i1", title: "T", description: "D", voteCount: 0 },
+      response: { status: 201 },
+    });
+    renderScreen();
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    submit("Free coffee", "Coffee on Fridays");
+    expect(await screen.findByText(/Idea posted with zero votes/)).toBeInTheDocument();
   });
 });

@@ -19,7 +19,7 @@ import LogIn from "@/screens/LogIn";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
   [
-    "flex items-center gap-2 rounded-[var(--brand-radius)] px-3 py-2 text-sm font-medium transition-colors",
+    "flex min-h-11 items-center gap-2 rounded-[var(--brand-radius)] px-3 py-2 text-sm font-medium transition-colors",
     isActive ? "bg-[var(--brand-hover)] text-[var(--brand-fg)]" : "text-[var(--brand-fg-muted)]",
   ].join(" ");
 
@@ -59,10 +59,8 @@ function AppShellLayout() {
     navigate("/board", { replace: true });
   };
 
-  // Posting needs a session: a logged-out or expired one is sent back to log in.
-  if (location.pathname === "/post-idea") {
-    if (user === null) return <Navigate to="/log-in" replace />;
-  }
+  // A visitor (or an expired session) is not redirected from the post form: the screen itself
+  // prompts to log in or sign up, and the server refuses the post anyway.
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -73,7 +71,7 @@ function AppShellLayout() {
           borderColor: "var(--brand-border)",
         }}
       >
-        <div className="flex items-center gap-6 px-6 py-2">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-6">
           <p
             className="shrink-0 text-sm font-semibold"
             style={{ fontFamily: "var(--brand-font-heading)" }}
@@ -102,16 +100,16 @@ function AppShellLayout() {
             )}
           </nav>
           {user ? (
-            <div className="ml-auto flex items-center gap-3 text-sm">
-              <span>{`Logged in as ${user.email}`}</span>
-              <button type="button" className="underline" onClick={logOut}>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 text-sm sm:ml-auto">
+              <span className="min-w-0 break-all">{`Logged in as ${user.email}`}</span>
+              <button type="button" className="min-h-11 px-1 underline" onClick={logOut}>
                 {"Log out"}
               </button>
             </div>
           ) : null}
         </div>
       </header>
-      <main className="flex-1 overflow-auto">
+      <main className="min-w-0 flex-1 overflow-x-hidden">
         <Outlet />
       </main>
     </div>

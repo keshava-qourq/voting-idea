@@ -1,6 +1,7 @@
 // @ts-nocheck -- generated from the approved design under its JS runtime contract; not hand-written TypeScript.
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React from "react";
+import { useLocation } from "react-router-dom";
 
 import * as UI from "@/lib/ui";
 import { Icons } from "@/lib/icons";
@@ -18,6 +19,9 @@ const GENERIC_ERROR = "Something went wrong. Try again.";
 
 export default function Screen() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Where the visitor was headed when prompted to log in: the post form, else the board.
+  const returnTo = location.state && location.state.from === "post-idea" ? "post-idea" : "board";
   const [email, setEmail] = React.useState("");
   const [password, setPassword] = React.useState("");
   const [formError, setFormError] = React.useState("");
@@ -37,7 +41,7 @@ export default function Screen() {
       });
       if (data) {
         setSessionToken(data.token);
-        navigate("board");
+        navigate(returnTo);
         return;
       }
       const status = response && response.status;
@@ -93,6 +97,7 @@ export default function Screen() {
 
   return (
     <div
+      className="min-w-0 overflow-x-hidden px-4 py-8 sm:px-6 sm:py-12"
       style={{
         minHeight: "100vh",
         backgroundColor: brand.backgroundColor,
@@ -101,7 +106,6 @@ export default function Screen() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "48px 24px",
       }}
     >
       <style>{`
@@ -123,13 +127,14 @@ export default function Screen() {
         }
       `}</style>
 
-      <main style={{ width: "100%", maxWidth: 460 }} className="gb-rise">
+      <main style={{ width: "100%", maxWidth: 460, minWidth: 0 }} className="gb-rise">
         {/* outer primary outline, offset from the gold frame */}
         <div style={{ border: "1px solid " + ink, padding: 6 }}>
           <div
+            data-layout="auth-card"
+            className="px-5 pb-8 pt-10 sm:px-8"
             style={{
               border: "1px solid " + gold,
-              padding: "48px 32px 32px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -163,7 +168,7 @@ export default function Screen() {
                 data-testid="log-in-title"
                 style={{
                   fontFamily: brand.fontHeading,
-                  fontSize: 36,
+                  fontSize: "clamp(26px, 9vw, 36px)",
                   lineHeight: 1.2,
                   fontWeight: 700,
                   letterSpacing: "0.24em",
