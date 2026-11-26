@@ -3,6 +3,17 @@
 > Maintained by QuorQ AI SDLC. Text between `sdlc:auto` markers is regenerated; anything outside them is yours and is kept.
 
 <!-- sdlc:auto:start releases -->
+## c94f12f50945 — 2026-11-26
+
+**Commit:** `c94f12f`
+
+**Delivered:**
+- US-009: Prompt visitors to log in when posting
+- US-011: Limit to one vote per user per idea
+- US-012: Prompt visitors to log in when voting
+- US-013: Use the board on desktop and mobile browsers
+- US-016: Setup and usage guide
+
 ## 7bb79805b346 — 2026-11-26
 
 **Commit:** `7bb7980`
