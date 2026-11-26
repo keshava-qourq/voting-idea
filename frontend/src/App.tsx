@@ -109,7 +109,16 @@ function AppShellLayout() {
           ) : null}
         </div>
       </header>
-      <main className="min-w-0 flex-1 overflow-x-hidden">
+      <main
+        className="min-w-0 flex-1 overflow-x-hidden"
+        onSubmitCapture={() => {
+          // A visitor (or an expired session) who tries to post is taken to the Log In screen;
+          // the server refuses the post anyway.
+          if (user === null && location.pathname === "/post-idea") {
+            navigate("/log-in", { state: { from: "post-idea" } });
+          }
+        }}
+      >
         <Outlet />
       </main>
     </div>

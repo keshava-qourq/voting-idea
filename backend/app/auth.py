@@ -132,10 +132,10 @@ def issue_token(session: Session, user: User) -> str:
     return jwt.encode(claims, _SECRET, algorithm=_ALGORITHM)
 
 
-def user_of_token(
+def _live_session(
     session: Session, credentials: HTTPAuthorizationCredentials | None
-) -> User | None:
-    """The user whose live session the token names, or None (missing, invalid or expired)."""
+) -> tuple[User, UserSession] | None:
+    """The user and the live session row the token names, or None (missing, invalid, expired)."""
     if credentials is None:
         return None
     try:
@@ -147,7 +147,18 @@ def user_of_token(
     login = session.get(UserSession, session_id)
     if login is None or str(login.user_id) != str(key) or login.expires_at <= datetime.now(UTC):
         return None
-    return session.get(User, key)
+    user = session.get(User, key)
+    if user is None:
+        return None
+    return user, login
+
+
+def user_of_token(
+    session: Session, credentials: HTTPAuthorizationCredentials | None
+) -> User | None:
+    """The user whose live session the token names, or None (missing, invalid or expired)."""
+    found = _live_session(session, credentials)
+    return found[0] if found else None
 
 
 def revoke_token(session: Session, credentials: HTTPAuthorizationCredentials | None) -> bool:
@@ -155,14 +166,11 @@ def revoke_token(session: Session, credentials: HTTPAuthorizationCredentials | N
 
     The session row is deleted, so the token is refused from then on, back button or not.
     """
-    if user_of_token(session, credentials) is None:
+    found = _live_session(session, credentials)
+    if found is None:
         return False
-    assert credentials is not None
-    claims = jwt.decode(credentials.credentials, _SECRET, algorithms=[_ALGORITHM])
-    login = session.get(UserSession, str(claims["sid"]))
-    if login is not None:
-        session.delete(login)
-        session.commit()
+    session.delete(found[1])
+    session.commit()
     return True
 
 

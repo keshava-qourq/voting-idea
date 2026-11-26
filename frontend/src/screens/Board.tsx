@@ -125,6 +125,29 @@ export default function Screen() {
         {rule}
       </header>
 
+      {!loggedIn && !prompt ? (
+        <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+          <button
+            type="button"
+            data-testid="log-in-link"
+            onClick={() => navigate("log-in")}
+            className={`min-h-11 px-3 underline ${focusCls}`}
+            style={{ outlineColor: brand.primaryColor }}
+          >
+            Log in
+          </button>
+          <button
+            type="button"
+            data-testid="sign-up-link"
+            onClick={() => navigate("sign-up")}
+            className={`min-h-11 px-3 underline ${focusCls}`}
+            style={{ outlineColor: brand.primaryColor }}
+          >
+            Sign up
+          </button>
+        </div>
+      ) : null}
+
       {!loggedIn && prompt ? (
         <section
           data-wf="b-1-0"
@@ -137,6 +160,9 @@ export default function Screen() {
           <h2 id="vote-prompt" className="text-sm" style={caps}>
             Log in or sign up to vote
           </h2>
+          <p data-testid="log-in-title" className="mt-3 text-sm">
+            Please log in to continue
+          </p>
           <div
             aria-hidden
             className="mx-auto mt-3 h-px w-12"
